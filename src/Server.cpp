@@ -1,10 +1,14 @@
 #include "Server.hpp"
-#include <cstring> // <--- REQUIRED for std::memset
-#include <fcntl.h> // <--- REQUIRED for fcntl, F_SETFL, O_NONBLOCK
+#include <arpa/inet.h> // for inet_ntoa
+#include <cstring>     // <--- REQUIRED for std::memset
+#include <fcntl.h>     // <--- REQUIRED for fcntl, F_SETFL, O_NONBLOCK
 #include <iostream>
 #include <netinet/in.h> // Required for sockaddr_in
 #include <stdexcept>
 #include <sys/socket.h>
+#include <unistd.h> // for close()
+
+extern bool isRunning;
 
 Server::Server(int port, std::string password)
     : _port(port), _password(password) {
@@ -86,10 +90,96 @@ void Server::init() {
 }
 
 void Server::run() {
-  std::cout << "Server is running on port " << _port << " with password '"
-            << _password << "'" << std::endl;
-  std::cout << "Listening for connections..." << std::endl;
+  std::cout << "Server is RUNNING..." << std::endl;
 
-  // TODO: Add the while(true) poll loop here.
-  // For now, we just exit so you can verify the build works.
+  while (isRunning) {
+    // 1. Wait for events
+    // &fds[0]  : Pointer to the first element of your vector
+    // fds.size : Number of items to watch
+    // -1       : Timeout (Wait forever until an event occurs)
+    int poll_count = poll(&_fds[0], _fds.size(), -1);
+
+    if (poll_count < 0) {
+      throw std::runtime_error("poll() failed");
+    }
+
+    // 2. Iterate through all file descriptors to check for events
+    // We use a manual index because _fds.size() might grow inside the loop!
+    for (size_t i = 0; i < _fds.size(); i++) {
+
+      // Check if this specific socket has data to read (POLLIN)
+      if (_fds[i].revents & POLLIN) {
+
+        // CASE A: It's the Listener Socket (New Connection)
+        if (_fds[i].fd == _serverSocketFd) {
+          acceptNewClient();
+        }
+        // CASE B: It's a regular Client (Incoming Message)
+        else {
+          char buffer[1024];
+          std::memset(buffer, 0, sizeof(buffer)); // Clear junk data
+
+          ssize_t bytes = recv(_fds[i].fd, buffer, sizeof(buffer) - 1,
+                               0); // -1 to leave space for null terminator
+
+          if (bytes <= 0) {
+            // Client disconnected or error
+            std::cout << "Client FD " << _fds[i].fd << " disconnected."
+                      << std::endl;
+            close(_fds[i].fd);
+
+            // Cleanup memory!
+            delete _clients[_fds[i].fd];
+            _clients.erase(_fds[i].fd);
+
+            // Remove from pollfd vector (This is tricky, do it carefully or use
+            // iterator)
+            _fds.erase(_fds.begin() + i);
+            i--; // Adjust index since vector shrank
+          } else {
+            // Data received!
+            buffer[bytes] = '\0'; // Null terminate
+            _clients[_fds[i].fd]->appendBuffer(buffer);
+
+            std::cout << "Buffer for FD " << _fds[i].fd << ": "
+                      << _clients[_fds[i].fd]->getBuffer() << std::endl;
+
+            // TODO: Check if buffer contains "\n". If yes, verify command.
+          }
+        }
+      }
+    }
+  }
+}
+
+void Server::acceptNewClient() {
+  struct sockaddr_in clientAddr;
+  socklen_t clientAddrLen = sizeof(clientAddr);
+
+  // 1. Accept the connection
+  int newFd =
+      accept(_serverSocketFd, (struct sockaddr *)&clientAddr, &clientAddrLen);
+  if (newFd == -1) {
+    std::cerr << "Error: accept failed" << std::endl;
+    return;
+  }
+
+  // 2. Set Non-Blocking (Vital!)
+  if (fcntl(newFd, F_SETFL, O_NONBLOCK) == -1) {
+    std::cerr << "Error: fcntl failed" << std::endl;
+    close(newFd);
+    return;
+  }
+
+  // 3. Add to poll list
+  struct pollfd newPfd;
+  newPfd.fd = newFd;
+  newPfd.events = POLLIN; // Monitor for incoming data
+  newPfd.revents = 0;
+  _fds.push_back(newPfd);
+
+  Client *newClient = new Client(newFd, inet_ntoa(clientAddr.sin_addr));
+  _clients[newFd] = newClient; // Store it in the map
+
+  std::cout << "New Client Connected! FD: " << newFd << std::endl;
 }
