@@ -89,6 +89,48 @@ void Server::init() {
   _fds.push_back(pfd); // Add it to your vector
 }
 
+//Ira: extract command, and cut the message to the args
+std::string Server::extractCMD(std::string& args) {
+	size_t pos = args.find(' ');
+	std::string command = args.substr(0, pos);
+	std::cout << "Command from client: " << command;
+	args = args.substr(pos + 1, args.length());
+	std::cout << " ARGS for this command: " << args << "." << std::endl;
+	return command;
+}
+
+//Ira: password comparing
+bool Server::comparePassword(std::string arg) {
+	if (arg == _password)
+		return (true);
+	return (false);
+}
+
+//Ira: execute commands
+void Server::executeCMD(std::string cmd, std::string args, Client* client) {
+	if (cmd == "NICK") {
+		client->setNickname(args);
+		if (DEBUG)
+			std::cout << "Nickname of new user: " << client->getNickname() << std::endl;
+	}
+	else if (cmd == "PASS") {
+		if (comparePassword(args))
+			client->setHasPassword();
+	}
+	else if (cmd == "USER") {
+		std::string username = args.substr(0, args.find(' '));
+		client->setUsername(username);
+		std::string realname = args.substr(args.find(':'));
+		client->setRealname(realname);
+		if (DEBUG)
+			std::cout << *client << std::endl;
+	}
+	else 
+		return ;
+		
+}
+
+
 void Server::run() {
   std::cout << "Server is RUNNING..." << std::endl;
 
@@ -143,8 +185,13 @@ void Server::run() {
 
             std::cout << "Buffer for FD " << _fds[i].fd << ": "
                       << _clients[_fds[i].fd]->getBuffer() << std::endl;
-
-            // TODO: Check if buffer contains "\n". If yes, verify command.
+			//Ira: extracting and executing commands
+			while (_clients[_fds[i].fd]->getBuffer() != "") {
+				std::string args = _clients[_fds[i].fd]->extractMessage();
+				std::string cmd = extractCMD(args);
+				executeCMD(cmd, args, _clients[_fds[i].fd]);
+			}
+			
           }
         }
       }
