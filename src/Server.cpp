@@ -123,7 +123,7 @@ void Server::executeCMD(std::string cmd, std::string args, Client* client) {
 		if (checkNickname(args)) {
 			client->setNickname(args);
 			if (DEBUG)
-				std::cout << "Nickname of new user: " << client->getNickname() << std::endl;
+				std::cout << "Nickname of new user" << client->getFd() << ": " << client->getNickname() << std::endl;
 		}
 		else {
 			std::cout << "Nickname isn't unique" << std::endl;
@@ -138,8 +138,9 @@ void Server::executeCMD(std::string cmd, std::string args, Client* client) {
 				std::cout << GREEN << "Client " << client->getFd() << " has input correct password" << ENDCOLOR << std::endl;
 		}
 		else {
-			std::cout << RED << "Password doesn't match" << ENDCOLOR << std::endl;
-			//Ira: [ToDo] dissconnect client, send an error?
+			if (DEBUG)
+				std::cout << RED << "Password doesn't match" << ENDCOLOR << std::endl;
+			disconnectClient(client->getFd());
 		}
 
 	}
@@ -214,8 +215,8 @@ void Server::run() {
 			if (_clients[_fds[i].fd]->getBuffer() != "") {
 			while (_clients[_fds[i].fd]->getBuffer() != "") {
 					std::string args = _clients[_fds[i].fd]->extractMessage();
-					std::string cmd = extractCMD(args);
-					executeCMD(cmd, args, _clients[_fds[i].fd]);
+					std::string cmd = extractCMD(args); 
+					executeCMD(cmd, args, _clients[_fds[i].fd]); //need for knowing poll _fds in use
 				}
 			}
           }
@@ -255,4 +256,19 @@ void Server::acceptNewClient() {
   _clients[newFd] = newClient; // Store it in the map
 
   std::cout << "New Client Connected! FD: " << newFd << std::endl;
+}
+
+void Server::disconnectClient(int fd) {
+    std::cout << "Client FD " << fd << " disconnected." << std::endl;
+
+    close(fd);
+    delete _clients[fd];
+    _clients.erase(fd);
+
+    for (size_t i = 0; i < _fds.size(); ++i) {
+        if (_fds[i].fd == fd) {
+            _fds.erase(_fds.begin() + i);
+            break;
+        }
+    }
 }

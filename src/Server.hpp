@@ -24,6 +24,7 @@ private:
 
   void init();
   void acceptNewClient();
+  void disconnectClient(int fd); //Ira, for removing when password is wrong
   // OCF - Private to prevent copying
   Server(const Server &other);
   Server &operator=(const Server &other);
