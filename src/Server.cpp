@@ -106,16 +106,42 @@ bool Server::comparePassword(std::string arg) {
 	return (false);
 }
 
+//Ira: check Nickname on Uniqueness
+bool Server::checkNickname(std::string arg) {
+	if (!_clients.empty()) {
+		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++) {
+			if (it->second->getNickname() == arg)
+				return (false);
+		}
+	}
+	return (true);
+}
+
 //Ira: execute commands
 void Server::executeCMD(std::string cmd, std::string args, Client* client) {
 	if (cmd == "NICK") {
-		client->setNickname(args);
-		if (DEBUG)
-			std::cout << "Nickname of new user: " << client->getNickname() << std::endl;
+		if (checkNickname(args)) {
+			client->setNickname(args);
+			if (DEBUG)
+				std::cout << "Nickname of new user: " << client->getNickname() << std::endl;
+		}
+		else {
+			std::cout << "Nickname isn't unique" << std::endl;
+			//Ira: [ToDo] dissconnect client, send an error?
+		}
+
 	}
 	else if (cmd == "PASS") {
-		if (comparePassword(args))
+		if (comparePassword(args)) {
 			client->setHasPassword();
+			if (DEBUG)
+				std::cout << GREEN << "Client " << client->getFd() << " has input correct password" << ENDCOLOR << std::endl;
+		}
+		else {
+			std::cout << RED << "Password doesn't match" << ENDCOLOR << std::endl;
+			//Ira: [ToDo] dissconnect client, send an error?
+		}
+
 	}
 	else if (cmd == "USER") {
 		std::string username = args.substr(0, args.find(' '));
@@ -127,7 +153,6 @@ void Server::executeCMD(std::string cmd, std::string args, Client* client) {
 	}
 	else 
 		return ;
-		
 }
 
 
@@ -186,12 +211,13 @@ void Server::run() {
             std::cout << "Buffer for FD " << _fds[i].fd << ": "
                       << _clients[_fds[i].fd]->getBuffer() << std::endl;
 			//Ira: extracting and executing commands
+			if (_clients[_fds[i].fd]->getBuffer() != "") {
 			while (_clients[_fds[i].fd]->getBuffer() != "") {
-				std::string args = _clients[_fds[i].fd]->extractMessage();
-				std::string cmd = extractCMD(args);
-				executeCMD(cmd, args, _clients[_fds[i].fd]);
+					std::string args = _clients[_fds[i].fd]->extractMessage();
+					std::string cmd = extractCMD(args);
+					executeCMD(cmd, args, _clients[_fds[i].fd]);
+				}
 			}
-			
           }
         }
       }

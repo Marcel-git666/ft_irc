@@ -2,5 +2,9 @@ to use second terminal:
 	weechat -d ~/.weechat2
 
 add server:
-	/server add myserver 127.0.0.1/6667 (or other port)
+	/server add <name> 127.0.0.1/6667 (or other port)
 
+connect with password
+	/server add <name> localhost/6667 -password mypassword
+if added server without password, can set it for next time
+	/set irc.server.<name>.password

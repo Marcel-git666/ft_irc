@@ -5,7 +5,8 @@
 Client::Client(int fd, std::string ip) : _fd(fd), _ipAddr(ip) {
   // Initialize buffer as empty
   _buffer = "";
-  _HasPassword = false;
+  _registered = false;
+  _hasPassword = false;
   _nickname = "";
   _username = "";
   _realname = "";
@@ -23,7 +24,9 @@ std::string Client::getIpAddr() const { return _ipAddr; }
 
 std::string Client::getBuffer() const { return _buffer; }
 
-bool Client::getHasPassword() const { return _HasPassword; }
+bool Client::getRegistered() const { return _registered; }
+
+bool Client::getHasPassword() const { return _hasPassword; }
 
 std::string Client::getNickname() const { return _nickname; }
 
@@ -32,7 +35,9 @@ std::string Client::getUsername() const { return _username; }
 std::string Client::getRealname() const { return _realname; }
 
 //SETTERS
-void Client::setHasPassword() { _HasPassword = true; }
+void Client::setRegistered() { _registered = true; }
+
+void Client::setHasPassword() { _hasPassword = true; }
 
 void Client::setNickname(std::string nickname) { _nickname = nickname; }
 
@@ -76,6 +81,6 @@ std::string Client::extractMessage() {
 std::ostream& operator<<(std::ostream& out, const Client& client) {
 	out << "Client info :\n" << "nickname: " << client.getNickname() << ", realname: " <<
 		client.getRealname() << ", username: " << client.getUsername() 
-		<< " password (true/false): " << client.getHasPassword();
+		<< " password (true/false): " << client.getRegistered();
 	return (out);
 }
