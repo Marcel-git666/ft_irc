@@ -5,6 +5,10 @@
 Client::Client(int fd, std::string ip) : _fd(fd), _ipAddr(ip) {
   // Initialize buffer as empty
   _buffer = "";
+  _HasPassword = false;
+  _nickname = "";
+  _username = "";
+  _realname = "";
 }
 
 Client::~Client() {
@@ -18,6 +22,23 @@ int Client::getFd() const { return _fd; }
 std::string Client::getIpAddr() const { return _ipAddr; }
 
 std::string Client::getBuffer() const { return _buffer; }
+
+bool Client::getHasPassword() const { return _HasPassword; }
+
+std::string Client::getNickname() const { return _nickname; }
+
+std::string Client::getUsername() const { return _username; }
+
+std::string Client::getRealname() const { return _realname; }
+
+//SETTERS
+void Client::setHasPassword() { _HasPassword = true; }
+
+void Client::setNickname(std::string nickname) { _nickname = nickname; }
+
+void Client::setUsername(std::string username) { _username = username; }
+
+void Client::setRealname(std::string realname) { _realname = realname; }
 
 // BUFFER HANDLING (The "Bucket")
 
@@ -36,6 +57,7 @@ bool Client::isReady() {
 // 4. The Handover: Extract one full command
 std::string Client::extractMessage() {
   size_t pos = _buffer.find('\n');
+  
 
   // If no newline, return empty (waiting for more data)
   if (pos == std::string::npos) {
@@ -43,12 +65,17 @@ std::string Client::extractMessage() {
   }
 
   // Extract the substring (0 to pos)
-  // We include up to pos. If you want to strip \r\n, handle it here or in
-  // parser.
-  std::string message = _buffer.substr(0, pos);
+  std::string message = _buffer.substr(0, pos - 1); // -1 because cut '\r' as well
 
   // Remove the message AND the newline from the buffer
   _buffer.erase(0, pos + 1);
-
   return message;
+}
+
+
+std::ostream& operator<<(std::ostream& out, const Client& client) {
+	out << "Client info :\n" << "nickname: " << client.getNickname() << ", realname: " <<
+		client.getRealname() << ", username: " << client.getUsername() 
+		<< " password (true/false): " << client.getHasPassword();
+	return (out);
 }

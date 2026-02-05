@@ -1,0 +1,6 @@
+to use second terminal:
+	weechat -d ~/.weechat2
+
+add server:
+	/server add myserver 127.0.0.1/6667 (or other port)
+

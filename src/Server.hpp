@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#define DEBUG true
+
 class Server {
 private:
   int _port;
@@ -25,6 +27,17 @@ public:
   Server(int port, std::string password);
   ~Server();
   void run();
+
+
+  //Ira: parcer
+  std::string extractCMD(std::string& args);
+
+  //Ira: executer
+  void executeCMD(std::string cmd, std::string args, Client* client);
+
+  //Ira: utils
+  bool comparePassword(std::string arg); // for password checking
+  void setClientInfo(std::string args, Client* client); //fset username and realname
 };
 
 #endif

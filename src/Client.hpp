@@ -8,6 +8,10 @@ private:
   int _fd;             // The socket file descriptor (the "phone line")
   std::string _ipAddr; // The user's IP address (for logging/bans)
   std::string _buffer; // The storage for incoming partial data
+  bool _HasPassword;
+  std::string _nickname;
+  std::string _username;
+  std::string _realname;
 
 public:
   // Constructor & Destructor
@@ -18,6 +22,16 @@ public:
   int getFd() const;
   std::string getIpAddr() const;
   std::string getBuffer() const;
+  bool getHasPassword() const;
+  std::string getNickname() const;
+  std::string getUsername() const;
+  std::string getRealname() const;
+
+  //Setters
+  void setHasPassword();
+  void setNickname(std::string nickname);
+  void setUsername(std::string username);
+  void setRealname(std::string realname);
 
   // Buffer Management (The "Bucket")
   void appendBuffer(std::string data);
@@ -29,5 +43,7 @@ public:
   // Extracts the full command and removes it from the buffer
   std::string extractMessage();
 };
+
+std::ostream& operator<<(std::ostream& out, const Client& client);
 
 #endif
