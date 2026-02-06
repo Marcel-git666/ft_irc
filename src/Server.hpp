@@ -39,11 +39,10 @@ public:
   std::string extractCMD(std::string& args);
 
   //Ira: executer
-  void executeCMD(std::string cmd, std::string args, Client* client);
+  bool executeCMD(std::string cmd, std::string args, Client* client); //return true if everithing ok
 
   //Ira: utils
-  bool comparePassword(std::string arg); // for password checking
-  bool checkNickname(std::string arg); //for nickname uniqness
+  std::string checkNickname(std::string arg); //for nickname uniqness
   void setClientInfo(std::string args, Client* client); //fset username and realname
   
 };

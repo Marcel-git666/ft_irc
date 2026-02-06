@@ -99,50 +99,42 @@ std::string Server::extractCMD(std::string& args) {
 	return command;
 }
 
-//Ira: password comparing
-bool Server::comparePassword(std::string arg) {
-	if (arg == _password)
-		return (true);
-	return (false);
-}
-
 //Ira: check Nickname on Uniqueness
-bool Server::checkNickname(std::string arg) {
+std::string Server::checkNickname(std::string arg) {
 	if (!_clients.empty()) {
 		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++) {
 			if (it->second->getNickname() == arg)
-				return (false);
+				return ("443");
 		}
 	}
-	return (true);
+	
+	return ("ok");
 }
 
 //Ira: execute commands
-void Server::executeCMD(std::string cmd, std::string args, Client* client) {
+bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 	if (cmd == "NICK") {
-		if (checkNickname(args)) {
-			client->setNickname(args);
-			if (DEBUG)
-				std::cout << "Nickname of new user" << client->getFd() << ": " << client->getNickname() << std::endl;
+		std::string checkNick = checkNickname(args);
+		if (checkNick == "443") {
+			std::string err = ":ircserv 433 * " + args + " :Nickname is already in use\r\n";
+			send(client->getFd(), err.c_str(), err.size(), 0);
 		}
-		else {
-			std::cout << "Nickname isn't unique" << std::endl;
-			//Ira: [ToDo] dissconnect client, send an error?
-		}
+		client->setNickname(args);
+		if (DEBUG)
+			std::cout << "Nickname of new user" << client->getFd() << ": " << client->getNickname() << std::endl;
 
 	}
 	else if (cmd == "PASS") {
-		if (comparePassword(args)) {
-			client->setHasPassword();
-			if (DEBUG)
-				std::cout << GREEN << "Client " << client->getFd() << " has input correct password" << ENDCOLOR << std::endl;
-		}
-		else {
+		if (args != _password) {
 			if (DEBUG)
 				std::cout << RED << "Password doesn't match" << ENDCOLOR << std::endl;
-			disconnectClient(client->getFd());
+			std::string err = ":server 464 * :Password incorrect\r\n";
+			send(client->getFd(), err.c_str(), err.size(), 0);
+			return (false);
 		}
-
+		client->setHasPassword();
+		if (DEBUG)
+			std::cout << GREEN << "Client " << client->getFd() << " has input correct password" << ENDCOLOR << std::endl;
 	}
 	else if (cmd == "USER") {
 		std::string username = args.substr(0, args.find(' '));
@@ -152,10 +144,8 @@ void Server::executeCMD(std::string cmd, std::string args, Client* client) {
 		if (DEBUG)
 			std::cout << *client << std::endl;
 	}
-	else 
-		return ;
+	return (true);
 }
-
 
 void Server::run() {
   std::cout << "Server is RUNNING..." << std::endl;
@@ -194,15 +184,17 @@ void Server::run() {
             // Client disconnected or error
             std::cout << "Client FD " << _fds[i].fd << " disconnected."
                       << std::endl;
-            close(_fds[i].fd);
+			disconnectClient(_fds[i].fd);
 
-            // Cleanup memory!
-            delete _clients[_fds[i].fd];
-            _clients.erase(_fds[i].fd);
+            // close(_fds[i].fd);
 
-            // Remove from pollfd vector (This is tricky, do it carefully or use
-            // iterator)
-            _fds.erase(_fds.begin() + i);
+            // // Cleanup memory!
+            // delete _clients[_fds[i].fd];
+            // _clients.erase(_fds[i].fd);
+
+            // // Remove from pollfd vector (This is tricky, do it carefully or use
+            // // iterator)
+            // _fds.erase(_fds.begin() + i);
             i--; // Adjust index since vector shrank
           } else {
             // Data received!
@@ -212,11 +204,14 @@ void Server::run() {
             std::cout << "Buffer for FD " << _fds[i].fd << ": "
                       << _clients[_fds[i].fd]->getBuffer() << std::endl;
 			//Ira: extracting and executing commands
-			if (_clients[_fds[i].fd]->getBuffer() != "") {
 			while (_clients[_fds[i].fd]->getBuffer() != "") {
-					std::string args = _clients[_fds[i].fd]->extractMessage();
-					std::string cmd = extractCMD(args); 
-					executeCMD(cmd, args, _clients[_fds[i].fd]); //need for knowing poll _fds in use
+				std::string args = _clients[_fds[i].fd]->extractMessage();
+				std::string cmd = extractCMD(args); 
+				if (!executeCMD(cmd, args, _clients[_fds[i].fd])) {
+					_clients[_fds[i].fd]->clearBuffer();
+					disconnectClient(_fds[i].fd);
+					i--;
+					break;
 				}
 			}
           }
@@ -258,6 +253,8 @@ void Server::acceptNewClient() {
   std::cout << "New Client Connected! FD: " << newFd << std::endl;
 }
 
+
+//Ira
 void Server::disconnectClient(int fd) {
     std::cout << "Client FD " << fd << " disconnected." << std::endl;
 
