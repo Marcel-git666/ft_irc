@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <sys/socket.h>
 #include <unistd.h> // for close()
+#include <cctype> // Ira: for isdigit nickname checking
+#include <ctime> // Ira: for PING client, keeping him alive
 
 extern bool isRunning;
 
@@ -89,73 +91,16 @@ void Server::init() {
   _fds.push_back(pfd); // Add it to your vector
 }
 
-//Ira: extract command, and cut the message to the args
-std::string Server::extractCMD(std::string& args) {
-	size_t pos = args.find(' ');
-	std::string command = args.substr(0, pos);
-	std::cout << "Command from client: " << command;
-	args = args.substr(pos + 1, args.length());
-	std::cout << " ARGS for this command: " << args << "." << std::endl;
-	return command;
-}
-
-//Ira: check Nickname on Uniqueness
-std::string Server::checkNickname(std::string arg) {
-	if (!_clients.empty()) {
-		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++) {
-			if (it->second->getNickname() == arg)
-				return ("443");
-		}
-	}
-	
-	return ("ok");
-}
-
-//Ira: execute commands
-bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
-	if (cmd == "NICK") {
-		std::string checkNick = checkNickname(args);
-		if (checkNick == "443") {
-			std::string err = ":ircserv 433 * " + args + " :Nickname is already in use\r\n";
-			send(client->getFd(), err.c_str(), err.size(), 0);
-		}
-		client->setNickname(args);
-		if (DEBUG)
-			std::cout << "Nickname of new user" << client->getFd() << ": " << client->getNickname() << std::endl;
-
-	}
-	else if (cmd == "PASS") {
-		if (args != _password) {
-			if (DEBUG)
-				std::cout << RED << "Password doesn't match" << ENDCOLOR << std::endl;
-			std::string err = ":server 464 * :Password incorrect\r\n";
-			send(client->getFd(), err.c_str(), err.size(), 0);
-			return (false);
-		}
-		client->setHasPassword();
-		if (DEBUG)
-			std::cout << GREEN << "Client " << client->getFd() << " has input correct password" << ENDCOLOR << std::endl;
-	}
-	else if (cmd == "USER") {
-		std::string username = args.substr(0, args.find(' '));
-		client->setUsername(username);
-		std::string realname = args.substr(args.find(':'));
-		client->setRealname(realname);
-		if (DEBUG)
-			std::cout << *client << std::endl;
-	}
-	return (true);
-}
-
 void Server::run() {
   std::cout << "Server is RUNNING..." << std::endl;
-
+  time_t lastPingTime = time(NULL); //Ira: to set time for PING clients
   while (isRunning) {
     // 1. Wait for events
     // &fds[0]  : Pointer to the first element of your vector
     // fds.size : Number of items to watch
-    // -1       : Timeout (Wait forever until an event occurs)
-    int poll_count = poll(&_fds[0], _fds.size(), -1);
+    // -1       : Timeout (Wait forever until an event occurs) 
+	//Ira: I need timeout not forever to ping clients alive, I put for now 1000ms, or maybe we need to come up with another idea
+    int poll_count = poll(&_fds[0], _fds.size(), 1000);
 
     if (poll_count < 0) {
       throw std::runtime_error("poll() failed");
@@ -184,17 +129,7 @@ void Server::run() {
             // Client disconnected or error
             std::cout << "Client FD " << _fds[i].fd << " disconnected."
                       << std::endl;
-			disconnectClient(_fds[i].fd);
-
-            // close(_fds[i].fd);
-
-            // // Cleanup memory!
-            // delete _clients[_fds[i].fd];
-            // _clients.erase(_fds[i].fd);
-
-            // // Remove from pollfd vector (This is tricky, do it carefully or use
-            // // iterator)
-            // _fds.erase(_fds.begin() + i);
+			disconnectClient(_fds[i].fd); //Ira: I put all stuff for client disconnection and poll fds deleting into his function
             i--; // Adjust index since vector shrank
           } else {
             // Data received!
@@ -214,12 +149,27 @@ void Server::run() {
 					break;
 				}
 			}
-          }
-        }
+			if (!_clients[_fds[i].fd]->getRegistered()) {
+				_clients[_fds[i].fd]->setRegistered(); //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
+				if (DEBUG) {
+					std::cout << GREEN << "Client FD " <<_clients[_fds[i].fd]->getFd() << " has been registered" << ENDCOLOR << std::endl;
+					std::cout << *_clients[_fds[i].fd] << std::endl;
+				}
+			}
+	      }
+	    }
       }
     }
+	time_t now =  time(NULL);
+	if (difftime(now, lastPingTime) >= PING_INTERVAL) {
+		for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+			sendPing(it->second);
+		}
+		lastPingTime = now;
+	}
   }
 }
+
 
 void Server::acceptNewClient() {
   struct sockaddr_in clientAddr;
@@ -254,7 +204,7 @@ void Server::acceptNewClient() {
 }
 
 
-//Ira
+//Ira: close fd, deleting fd from poll fds, delete client obj and clean the clients map
 void Server::disconnectClient(int fd) {
     std::cout << "Client FD " << fd << " disconnected." << std::endl;
 
@@ -268,4 +218,117 @@ void Server::disconnectClient(int fd) {
             break;
         }
     }
+}
+
+//Ira: extract command, and cut the message to the args
+std::string Server::extractCMD(std::string& args) {
+	size_t pos = args.find(' ');
+	std::string command = args.substr(0, pos);
+	std::cout << "Command from client: " << command;
+	args = args.substr(pos + 1, args.length());
+	std::cout << " ARGS for this command: " << args << "." << std::endl;
+	return command;
+}
+
+//Ira: check Nickname on Uniqueness and rules
+std::string Server::checkNickname(std::string arg) {
+	if (!_clients.empty()) {
+		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++) {
+			if (it->second->getNickname() == arg)
+				return ("433");
+		}
+	}
+	if (isdigit(arg[0]) || arg.find(':') != std::string::npos
+		|| arg.find('#') != std::string::npos || arg.find(' ') != std::string::npos)
+			return("432");
+	return ("ok");
+}
+
+//Ira: to keep client alive
+void Server::sendPing(Client* client) {
+	std::string token = "keepalive";
+    std::string msg = ":server PING :" + token + "\r\n";
+    send(client->getFd(), msg.c_str(), msg.size(), 0);
+}
+
+//Ira: execute commands
+bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
+	if (cmd == "NICK") {
+		std::string checkNick = checkNickname(args);
+		if (checkNick == "433")
+			sendError(args, 433, client);
+		else if (checkNick == "432")
+			sendError(args, 432, client);
+		if (client->getNickname() != "") {
+			// [TO DO] (if NICK changes, need to send info for other users)
+			if (DEBUG)
+				std::cout << "Nickname of client FD " << client->getFd() << "changed to: " << args << std::endl;
+		}
+		client->setNickname(args);
+		if (DEBUG)
+			std::cout << "Nickname of new client FD " << client->getFd() << ": " << client->getNickname() << std::endl;
+	}
+	else if (cmd == "PASS") {
+		if (args != _password) {
+			if (DEBUG)
+				std::cout << RED << "Password doesn't match" << ENDCOLOR << std::endl;
+			sendError(args, 464, client);
+			return (false); //Ira: returned here because if password is wrong we don't axcept anything else and immediately disconnect this client
+		}
+		client->setHasPassword();
+		if (DEBUG)
+			std::cout << GREEN << "Client FD " << client->getFd() << " has input correct password" << ENDCOLOR << std::endl;
+	}
+	else if (cmd == "USER") {
+		if (!client->getRegistered()) {
+			//Ira: USER command looks like USER <username> 0 * :<realname>
+			//clients usually use for username and realname the nickname, if it's not set by user
+			//to expect an empty username is an extra safety, but we have error massage for it so I included it
+			std::string username = args.substr(0, args.find(' ')); //find first arg
+			if (username.empty())
+				sendError(args, 461, client);
+			if (username.length() > USERLEN) {
+				username = username.substr(0, USERLEN);
+				//Ira: IRCstandard: "If this length is advertised, the username 
+				//MUST be silently truncated to the given length before being used." 
+			}
+			if (username[0] != '~')
+				username.insert(0, 1, '~');
+				//Ira: IRCstandard: "... the username provided by the client SHOULD be prefixed 
+				// by a tilde ('~', 0x7E) to show that this value is user-set."
+			client->setUsername(username);
+			std::cout << GREEN << "Client FD " << client->getFd() << " username is " << client->getUsername() << ENDCOLOR << std::endl;
+			std::string realname = args.substr(args.find(':') + 1);
+			client->setRealname(realname);
+			std::cout << GREEN << "Client FD " << client->getFd() << " realname is " << client->getRealname() << ENDCOLOR << std::endl;
+		}
+		else {
+			sendError(args, 462, client);
+			if (DEBUG)
+				std::cout << RED << "Client FD" << client->getFd() << "is already registered" << std::endl;
+			return (true); 
+		}
+	}
+	else if (cmd == "PING") {
+		std::string tocken = args.substr(args.find(':') + 1); //token should be the same as recieved by client
+		std::string msg = ":server PONG " + tocken + "\r\n";
+		send(client->getFd(), msg.c_str(), msg.size(), 0);
+	}
+	return (true);
+}
+
+void Server::sendError(std::string args, int errorNumber, Client* client) {
+	std::string err;
+	if (errorNumber == 433)
+		err = ":server 433 * " + args + " :Nickname is already in use\r\n";
+	else if (errorNumber == 432)
+		err = ":server 432 * " + args + " :Erroneus nickname\r\n";
+	else if (errorNumber == 464)
+		err = ":server 464 * :Password incorrect\r\n";
+	else if (errorNumber == 461)
+		err = ":server 461 USER :Not enough parameters\r\n";
+	else if (errorNumber == 462)
+		err = ":server 462 * :You may not reregister\r\n";
+	
+	send(client->getFd(), err.c_str(), err.size(), 0);
 }

@@ -35,7 +35,10 @@ std::string Client::getUsername() const { return _username; }
 std::string Client::getRealname() const { return _realname; }
 
 //SETTERS
-void Client::setRegistered() { _registered = true; }
+void Client::setRegistered() { 
+	if (_hasPassword == true && !_nickname.empty() && !_username.empty() && !_realname.empty())
+		_registered = true;
+}
 
 void Client::setHasPassword() { _hasPassword = true; }
 

@@ -1,18 +1,12 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#define RED "\033[31m"
-#define GREEN "\033[32m"
-#define PINK "\033[35m"
-#define BLUE "\033[36m"
-#define ENDCOLOR "\033[0m"
-#define DEBUG true
-
 #include "Client.hpp"
 #include <map>
 #include <poll.h>
 #include <string>
 #include <vector>
+#include "Definitions.hpp" //Ira: I put defines in a different file to keep this hpp more clear
 
 class Server {
 private:
@@ -24,7 +18,10 @@ private:
 
   void init();
   void acceptNewClient();
-  void disconnectClient(int fd); //Ira, for removing when password is wrong
+  void disconnectClient(int fd); //Ira: for removing when password is wrong
+  void sendError(const std::string args, int errorNumber, Client* client); //Ira: sending errors to the client
+  void sendPing(Client* client); //Tra: to keep client alive (connected)
+  void sendPong(Client* Client, std::string args);
   // OCF - Private to prevent copying
   Server(const Server &other);
   Server &operator=(const Server &other);
@@ -43,7 +40,7 @@ public:
 
   //Ira: utils
   std::string checkNickname(std::string arg); //for nickname uniqness
-  void setClientInfo(std::string args, Client* client); //fset username and realname
+
   
 };
 
