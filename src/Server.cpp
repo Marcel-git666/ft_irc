@@ -93,7 +93,6 @@ void Server::init() {
 
 void Server::run() {
   std::cout << "Server is RUNNING..." << std::endl;
-  time_t lastPingTime = time(NULL); //Ira: to set time for PING clients
   while (isRunning) {
     // 1. Wait for events
     // &fds[0]  : Pointer to the first element of your vector
@@ -149,24 +148,10 @@ void Server::run() {
 					break;
 				}
 			}
-			if (!_clients[_fds[i].fd]->getRegistered()) {
-				_clients[_fds[i].fd]->setRegistered(); //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
-				if (DEBUG) {
-					std::cout << GREEN << "Client FD " <<_clients[_fds[i].fd]->getFd() << " has been registered" << ENDCOLOR << std::endl;
-					std::cout << *_clients[_fds[i].fd] << std::endl;
-				}
-			}
 	      }
 	    }
       }
     }
-	time_t now =  time(NULL);
-	if (difftime(now, lastPingTime) >= PING_INTERVAL) {
-		for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-			sendPing(it->second);
-		}
-		lastPingTime = now;
-	}
   }
 }
 
@@ -244,7 +229,7 @@ std::string Server::checkNickname(std::string arg) {
 	return ("ok");
 }
 
-//Ira: to keep client alive
+//Ira: if needed, can be deleted
 void Server::sendPing(Client* client) {
 	std::string token = "keepalive";
     std::string msg = ":server PING :" + token + "\r\n";
@@ -301,11 +286,12 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 			std::string realname = args.substr(args.find(':') + 1);
 			client->setRealname(realname);
 			std::cout << GREEN << "Client FD " << client->getFd() << " realname is " << client->getRealname() << ENDCOLOR << std::endl;
+			registerClient(*client); //Ira: registration if wasn't
 		}
 		else {
 			sendError(args, 462, client);
 			if (DEBUG)
-				std::cout << RED << "Client FD" << client->getFd() << "is already registered" << std::endl;
+				std::cout << RED << "Client FD" << client->getFd() << "is already registered" << ENDCOLOR << std::endl;
 			return (true); 
 		}
 	}
@@ -313,6 +299,8 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 		std::string tocken = args.substr(args.find(':') + 1); //token should be the same as recieved by client
 		std::string msg = ":server PONG " + tocken + "\r\n";
 		send(client->getFd(), msg.c_str(), msg.size(), 0);
+		if (DEBUG)
+			std::cout << GREEN << "PING command was accepted and answered" << ENDCOLOR << std::endl;
 	}
 	return (true);
 }
@@ -331,4 +319,16 @@ void Server::sendError(std::string args, int errorNumber, Client* client) {
 		err = ":server 462 * :You may not reregister\r\n";
 	
 	send(client->getFd(), err.c_str(), err.size(), 0);
+}
+
+void Server::registerClient(Client& client) {
+	if (!client.getRegistered()) {
+		client.setRegistered(); //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
+		std::string msg = ":server 001 " + client.getNickname() + " :Welcome to the IRC Network, " + client.getNickname() + "\r\n";
+		send(client.getFd(), msg.c_str(), msg.size(), 0);
+		if (DEBUG) {
+			std::cout << GREEN << "Client FD " << client.getFd() << " has been registered" << ENDCOLOR << std::endl;
+			std::cout << client << std::endl;
+		}
+	}
 }

@@ -24,3 +24,8 @@ Check what server you’re currently on
 
 to switch off tsl 
 /irc.server.<name>.tls off
+
+
+FOR TEST:
+change username and realname to the new one
+/quote USER <newname> 0 * :<newname> 		-> should send ERROR
