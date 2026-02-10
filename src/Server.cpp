@@ -237,31 +237,38 @@ void Server::sendPing(Client* client) {
 
 //Ira: execute commands
 bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
-	if (cmd == "NICK") {
-		std::string checkNick = checkNickname(args);
-		if (checkNick == "433")
-			sendError(args, 433, client);
-		else if (checkNick == "432")
-			sendError(args, 432, client);
-		if (client->getNickname() != "") {
-			// [TO DO] (if NICK changes, need to send info for other users)
-			if (DEBUG)
-				std::cout << "Nickname of client FD " << client->getFd() << "changed to: " << args << std::endl;
-		}
-		client->setNickname(args);
-		if (DEBUG)
-			std::cout << "Nickname of new client FD " << client->getFd() << ": " << client->getNickname() << std::endl;
-	}
-	else if (cmd == "PASS") {
+	if (cmd == "PASS") {
 		if (args != _password) {
 			if (DEBUG)
 				std::cout << RED << "Password doesn't match" << ENDCOLOR << std::endl;
 			sendError(args, 464, client);
-			return (false); //Ira: returned here because if password is wrong we don't axcept anything else and immediately disconnect this client
+			return (false); //Ira: returned here because if password is wrong we don't accept anything else and immediately disconnect this client
 		}
 		client->setHasPassword();
 		if (DEBUG)
 			std::cout << GREEN << "Client FD " << client->getFd() << " has input correct password" << ENDCOLOR << std::endl;
+	}
+	else if (cmd == "NICK") {
+		std::string checkNick = checkNickname(args);
+		if (checkNick != "ok") {
+			if (checkNick == "433")
+				sendError(args, 433, client);
+			else if (checkNick == "432")
+				sendError(args, 432, client);
+			return (true);
+		}
+		else {
+			if (client->getNickname() != "") {
+				// [TO DO] (if NICK changes, need to send info for other users)
+				if (DEBUG)
+					std::cout << GREEN << "Nickname of client FD " << client->getFd() << " changed to: " << args << ENDCOLOR << std::endl;
+			}
+			else {
+				if (DEBUG)
+					std::cout << "Nickname of new client FD " << client->getFd() << ": " << args << std::endl;
+			}
+			client->setNickname(args);
+		}
 	}
 	else if (cmd == "USER") {
 		if (!client->getRegistered()) {
@@ -318,6 +325,8 @@ void Server::sendError(std::string args, int errorNumber, Client* client) {
 		err = ":server 462 * :You may not reregister\r\n";
 	
 	send(client->getFd(), err.c_str(), err.size(), 0);
+	if (DEBUG)
+		std::cout << PINK << "Error " << errorNumber << " for client FD " << client->getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }
 
 void Server::registerClient(Client& client) {
