@@ -98,8 +98,7 @@ void Server::run() {
     // &fds[0]  : Pointer to the first element of your vector
     // fds.size : Number of items to watch
     // -1       : Timeout (Wait forever until an event occurs) 
-	//Ira: I need timeout not forever to ping clients alive, I put for now 1000ms, or maybe we need to come up with another idea
-    int poll_count = poll(&_fds[0], _fds.size(), 1000);
+    int poll_count = poll(&_fds[0], _fds.size(), -1);
 
     if (poll_count < 0) {
       throw std::runtime_error("poll() failed");
