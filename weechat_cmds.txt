@@ -1,0 +1,31 @@
+to use second terminal:
+	weechat -d ~/.weechat2
+
+add server:
+	/server add <name> 127.0.0.1/6667 (or other port)
+
+connect with password
+	/server add <name> localhost/6667 -password mypassword
+if added server without password, can set it for next time
+	/set irc.server.<name>.password
+
+See the list of servers you added
+/server list
+
+Delete server
+/server del <name>
+
+Disconnect without deleting (FYI)
+/disconnect <name>
+
+Check what server you’re currently on
+/buffer list
+
+
+to switch off tsl 
+/irc.server.<name>.tls off
+
+
+FOR TEST:
+change username and realname to the new one
+/quote USER <newname> 0 * :<newname> 		-> should send ERROR

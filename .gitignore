@@ -39,3 +39,7 @@
 
 # debug information files
 *.dwo
+
+# Ira_debug
+.vscode
+ircerv_debug
