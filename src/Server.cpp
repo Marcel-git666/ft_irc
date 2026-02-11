@@ -8,12 +8,14 @@
 #include <sys/socket.h>
 #include <unistd.h> // for close()
 #include <cctype> // Ira: for isdigit nickname checking
-#include <ctime> // Ira: for PING client, keeping him alive
+
 
 extern bool isRunning;
 
 Server::Server(int port, std::string password)
     : _port(port), _password(password) {
+  std::time_t now = std::time(NULL);
+  _creationTime = std::ctime(&now);
   init();
 }
 
@@ -265,7 +267,7 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 			}
 			else {
 				if (DEBUG)
-					std::cout << "Nickname of new client FD " << client->getFd() << ": " << args << std::endl;
+					std::cout << GREEN << "Nickname of new client FD " << client->getFd() << ": " << args << ENDCOLOR << std::endl;
 			}
 			client->setNickname(args);
 		}
@@ -323,20 +325,27 @@ void Server::sendError(std::string args, int errorNumber, Client* client) {
 		err = ":server 461 USER :Not enough parameters\r\n";
 	else if (errorNumber == 462)
 		err = ":server 462 * :You may not reregister\r\n";
-	
 	send(client->getFd(), err.c_str(), err.size(), 0);
 	if (DEBUG)
 		std::cout << PINK << "Error " << errorNumber << " for client FD " << client->getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }
 
 void Server::registerClient(Client& client) {
-	if (!client.getRegistered()) {
-		client.setRegistered(); //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
-		std::string msg = ":server 001 " + client.getNickname() + " :Welcome to the IRC Network, " + client.getNickname() + "\r\n";
-		send(client.getFd(), msg.c_str(), msg.size(), 0);
-		if (DEBUG) {
-			std::cout << GREEN << "Client FD " << client.getFd() << " has been registered" << ENDCOLOR << std::endl;
-			std::cout << client << std::endl;
-		}
+	client.setRegistered(); //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
+	std::string msg = ":server 001 " + client.getNickname() + " :Welcome to the IRC Network, " + client.getNickname() + "\r\n";
+	send(client.getFd(), msg.c_str(), msg.size(), 0);
+	//Ira: messages below isn't obligated, but I did it to be more like the original IRC protocol
+	msg = ":server 002 :Your host is 42_ircserv, running version 01\r\n";
+	send(client.getFd(), msg.c_str(), msg.size(), 0);
+	msg = ":server 003 :This server was created " + _creationTime + "\r\n";
+	send(client.getFd(), msg.c_str(), msg.size(), 0);
+	// format: 004 <nick> <servername> <version> <usermodes> <channelmodes>
+	// usermodes = o -operators 
+	// channelmodes = i  (invite-only); t  (topic restricted); k  (key/password); o  (channel operator); l  (user limit)
+	msg = ":server 004 " + client.getNickname() + " 42_ircserv 1.0 o itkol\r\n"; 
+	send(client.getFd(), msg.c_str(), msg.size(), 0);
+	if (DEBUG) {
+		std::cout << GREEN << "Client FD " << client.getFd() << " has been registered" << ENDCOLOR << std::endl;
+		std::cout << client << std::endl;
 	}
 }

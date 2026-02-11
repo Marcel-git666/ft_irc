@@ -7,12 +7,15 @@
 #include <string>
 #include <vector>
 #include "Definitions.hpp" //Ira: I put defines in a different file to keep this hpp more clear
+#include <ctime> // Ira: time of server creation
+
 
 class Server {
 private:
   int _port;
   std::string _password;
   int _serverSocketFd;
+  std::string _creationTime;
   std::vector<struct pollfd> _fds; // The list of file descriptors for poll()
   std::map<int, Client *> _clients;
 
