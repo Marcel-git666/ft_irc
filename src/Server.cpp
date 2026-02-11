@@ -304,13 +304,24 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 		}
 	}
 	else if (cmd == "PING") {
-		std::string tocken = args.substr(args.find(':') + 1); //token should be the same as recieved by client
-		std::string msg = ":server PONG " + tocken + "\r\n";
-		send(client->getFd(), msg.c_str(), msg.size(), 0);
+		std::string token = args.substr(args.find(':') + 1); //token should be the same as recieved by client
+		//[ToDo] From Copilot appeared that it's not obligated to have ":", whithout it also should work
+		sendPong(client, token);
 		if (DEBUG)
 			std::cout << GREEN << "PING command was accepted and answered" << ENDCOLOR << std::endl;
 	}
+	else if (cmd == "PRIVMSG") {
+		if (args[0] != '#')
+			sendPrivateMsg(*client, args);
+
+	}
+
 	return (true);
+}
+
+void Server::sendPong(Client* client, std::string token) {
+	std::string msg = ":server PONG " + token + "\r\n";
+	send(client->getFd(), msg.c_str(), msg.size(), 0);
 }
 
 void Server::sendError(std::string args, int errorNumber, Client* client) {

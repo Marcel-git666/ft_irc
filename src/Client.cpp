@@ -84,6 +84,6 @@ std::string Client::extractMessage() {
 std::ostream& operator<<(std::ostream& out, const Client& client) {
 	out << "Client info :\n" << "nickname: " << client.getNickname() << ", realname: " <<
 		client.getRealname() << ", username: " << client.getUsername() 
-		<< " password (true/false): " << client.getRegistered();
+		<< " password (true/false): " << client.getHasPassword();
 	return (out);
 }
