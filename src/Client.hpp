@@ -30,7 +30,7 @@ public:
   std::string getRealname() const;
 
   //Setters
-  void setRegistered();
+  bool setRegistered();
   void setHasPassword();
   void setNickname(std::string nickname);
   void setUsername(std::string username);

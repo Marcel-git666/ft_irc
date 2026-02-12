@@ -35,9 +35,10 @@ std::string Client::getUsername() const { return _username; }
 std::string Client::getRealname() const { return _realname; }
 
 //SETTERS
-void Client::setRegistered() { 
+bool Client::setRegistered() { 
 	if (_hasPassword == true && !_nickname.empty() && !_username.empty() && !_realname.empty())
 		_registered = true;
+	return(_registered);
 }
 
 void Client::setHasPassword() { _hasPassword = true; }
@@ -84,6 +85,6 @@ std::string Client::extractMessage() {
 std::ostream& operator<<(std::ostream& out, const Client& client) {
 	out << "Client info :\n" << "nickname: " << client.getNickname() << ", realname: " <<
 		client.getRealname() << ", username: " << client.getUsername() 
-		<< " password (true/false): " << client.getHasPassword();
+		<< " password (true/false): " << client.getHasPassword() << " registered (true/false): " << client.getRegistered();
 	return (out);
 }

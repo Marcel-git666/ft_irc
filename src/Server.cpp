@@ -305,7 +305,6 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 			sendPrivateMsg(*client, args);
 
 	}
-
 	return (true);
 }
 
@@ -332,30 +331,35 @@ void Server::sendError(std::string args, int errorNumber, Client* client) {
 }
 
 void Server::registerClient(Client& client) {
-	client.setRegistered(); //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
+	if (client.setRegistered()) { //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
 	std::string msg = ":server 001 " + client.getNickname() + " :Welcome to the IRC Network, " + client.getNickname() + "\r\n";
-	send(client.getFd(), msg.c_str(), msg.size(), 0);
-	//Ira: messages below isn't obligated, but I did it to be more like the original IRC protocol
-	msg = ":server 002 :Your host is 42_ircserv, running version 01\r\n";
-	send(client.getFd(), msg.c_str(), msg.size(), 0);
-	msg = ":server 003 :This server was created " + _creationTime + "\r\n";
-	send(client.getFd(), msg.c_str(), msg.size(), 0);
-	// format: 004 <nick> <servername> <version> <usermodes> <channelmodes>
-	// usermodes = o -operators 
-	// channelmodes = i  (invite-only); t  (topic restricted); k  (key/password); o  (channel operator); l  (user limit)
-	msg = ":server 004 " + client.getNickname() + " 42_ircserv 1.0 o itkol\r\n"; 
-	send(client.getFd(), msg.c_str(), msg.size(), 0);
-	if (DEBUG) {
-		std::cout << GREEN << "Client FD " << client.getFd() << " has been registered" << ENDCOLOR << std::endl;
-		std::cout << client << std::endl;
+		send(client.getFd(), msg.c_str(), msg.size(), 0);
+		//Ira: messages below isn't obligated, but I did it to be more like the original IRC protocol
+		msg = ":server 002 :Your host is 42_ircserv, running version 01\r\n";
+		send(client.getFd(), msg.c_str(), msg.size(), 0);
+		msg = ":server 003 :This server was created " + _creationTime + "\r\n";
+		send(client.getFd(), msg.c_str(), msg.size(), 0);
+		// format: 004 <nick> <servername> <version> <usermodes> <channelmodes>
+		// usermodes = o -operators 
+		// channelmodes = i  (invite-only); t  (topic restricted); k  (key/password); o  (channel operator); l  (user limit)
+		msg = ":server 004 " + client.getNickname() + " 42_ircserv 1.0 o itkol\r\n"; 
+		send(client.getFd(), msg.c_str(), msg.size(), 0);
+		if (DEBUG) {
+			std::cout << GREEN << "Client FD " << client.getFd() << " has been registered" << ENDCOLOR << std::endl;
+			std::cout << client << std::endl;
+		}
 	}
+	else {
+		if (DEBUG) 
+			std::cout << RED << "Client FD " << client.getFd() << " couldn't be registered" << ENDCOLOR << std::endl;
+	}
+
 }
 
 int Server::clientFdsearch(std::string nickName) {
-	int FD = 0;
-	for (int i = 0; i < _clients.size(); i++) {
-		if (_clients[i]->getNickname() == nickName) 
-			return (i);
+	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+		if (it->second->getNickname() == nickName)
+			return it->first;   // return the fd (the key)
 	}
-	return (0);
+	return (-1);
 }

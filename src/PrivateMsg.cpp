@@ -11,7 +11,6 @@ std::vector<std::string> split(const std::string& targetsStr, char delimeter) {
 	}
 	targets.push_back(targetsStr.substr(start));
 	return (targets);
-	
 }
 
 void Server::sendPrivateMsg(const Client& sender, std::string args) {
@@ -26,8 +25,8 @@ void Server::sendPrivateMsg(const Client& sender, std::string args) {
 			std::string message = ":" + sender.getNickname() + "!" +
                 sender.getUsername() + "@localhost PRIVMSG " +
                 *it + " :" + msg + "\r\n";
+			std::cout << GREEN << "Sending message from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
 			send(FD, msg.c_str(), msg.size(), 0);
 		}
 	}
-	
 }
