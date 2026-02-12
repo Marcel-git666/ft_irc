@@ -9,7 +9,15 @@
 #include "Definitions.hpp" //Ira: I put defines in a different file to keep this hpp more clear
 #include <ctime> // Ira: time of server creation
 #include <sstream> // Ira: For reading from string, split targets in a private message
-
+#include <arpa/inet.h> // for inet_ntoa
+#include <cstring>     // <--- REQUIRED for std::memset
+#include <fcntl.h>     // <--- REQUIRED for fcntl, F_SETFL, O_NONBLOCK
+#include <iostream>
+#include <netinet/in.h> // Required for sockaddr_in
+#include <stdexcept>
+#include <sys/socket.h>
+#include <unistd.h> // for close()
+#include <cctype> // Ira: for isdigit nickname checking
 
 class Server {
 private:
@@ -44,7 +52,7 @@ public:
 
   //Ira: utils
   std::string checkNickname(std::string arg); //for nickname uniqness
-
+  int clientFdsearch(std::string nickName); //get FD from nickname
 
   void registerClient(Client& client);
   void sendPrivateMsg(const Client& client, std::string args);

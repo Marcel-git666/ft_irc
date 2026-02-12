@@ -1,14 +1,4 @@
 #include "Server.hpp"
-#include <arpa/inet.h> // for inet_ntoa
-#include <cstring>     // <--- REQUIRED for std::memset
-#include <fcntl.h>     // <--- REQUIRED for fcntl, F_SETFL, O_NONBLOCK
-#include <iostream>
-#include <netinet/in.h> // Required for sockaddr_in
-#include <stdexcept>
-#include <sys/socket.h>
-#include <unistd.h> // for close()
-#include <cctype> // Ira: for isdigit nickname checking
-
 
 extern bool isRunning;
 
@@ -359,4 +349,13 @@ void Server::registerClient(Client& client) {
 		std::cout << GREEN << "Client FD " << client.getFd() << " has been registered" << ENDCOLOR << std::endl;
 		std::cout << client << std::endl;
 	}
+}
+
+int Server::clientFdsearch(std::string nickName) {
+	int FD = 0;
+	for (int i = 0; i < _clients.size(); i++) {
+		if (_clients[i]->getNickname() == nickName) 
+			return (i);
+	}
+	return (0);
 }
