@@ -230,7 +230,7 @@ void Server::sendPing(Client* client) {
 //Ira: execute commands
 bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 	if (cmd == "PASS") {
-		if (args != _password) {
+		if (args != _password && !_password.empty()) {
 			if (DEBUG)
 				std::cout << RED << "Password doesn't match" << ENDCOLOR << std::endl;
 			sendError(args, 464, client);
@@ -261,6 +261,9 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 			}
 			client->setNickname(args);
 		}
+		if (!client->getRegistered())
+			if (!registerClient(*client))
+				return (false);
 	}
 	else if (cmd == "USER") {
 		if (!client->getRegistered()) {
@@ -284,7 +287,8 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 			std::string realname = args.substr(args.find(':') + 1);
 			client->setRealname(realname);
 			std::cout << GREEN << "Client FD " << client->getFd() << " realname is " << client->getRealname() << ENDCOLOR << std::endl;
-			registerClient(*client); //Ira: registration if wasn't
+			if (!registerClient(*client)) //Ira: registration if wasn't
+				return (false); // we need tu return smth for the case when client can't be registere because of password absence
 		}
 		else {
 			sendError(args, 462, client);
@@ -300,10 +304,13 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 		if (DEBUG)
 			std::cout << GREEN << "PING command was accepted and answered" << ENDCOLOR << std::endl;
 	}
-	else if (cmd == "PRIVMSG") {
-		if (args[0] != '#')
-			sendPrivateMsg(*client, args);
-
+	else {
+		if (client->getRegistered()) {
+			if (cmd == "PRIVMSG") {
+				if (args[0] != '#')
+					sendPrivateMsg(*client, args);
+			}
+		}
 	}
 	return (true);
 }
@@ -330,7 +337,11 @@ void Server::sendError(std::string args, int errorNumber, Client* client) {
 		std::cout << PINK << "Error " << errorNumber << " for client FD " << client->getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }
 
-void Server::registerClient(Client& client) {
+bool Server::registerClient(Client& client) {
+	if (!_password.empty() && !client.getHasPassword()) {
+		sendError(client.getNickname(), 464, &client);
+		return (false);
+	}
 	if (client.setRegistered()) { //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
 	std::string msg = ":server 001 " + client.getNickname() + " :Welcome to the IRC Network, " + client.getNickname() + "\r\n";
 		send(client.getFd(), msg.c_str(), msg.size(), 0);
@@ -353,7 +364,7 @@ void Server::registerClient(Client& client) {
 		if (DEBUG) 
 			std::cout << RED << "Client FD " << client.getFd() << " couldn't be registered" << ENDCOLOR << std::endl;
 	}
-
+	return (true);
 }
 
 int Server::clientFdsearch(std::string nickName) {

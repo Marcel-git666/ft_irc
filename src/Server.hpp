@@ -54,7 +54,7 @@ public:
   std::string checkNickname(std::string arg); //for nickname uniqness
   int clientFdsearch(std::string nickName); //get FD from nickname
 
-  void registerClient(Client& client);
+  bool registerClient(Client& client);
   void sendPrivateMsg(const Client& client, std::string args);
 
   
