@@ -16,17 +16,19 @@ std::vector<std::string> split(const std::string& targetsStr, char delimeter) {
 void Server::sendPrivateMsg(const Client& sender, std::string args) {
 	std::vector<std::string> targets;
 	size_t colonPos = args.find(":");
-	std::string targetsStr = args.substr(0, colonPos - 2); //Ira: need to cut space and colon
+	std::string targetsStr = args.substr(0, colonPos - 1); //Ira: need to cut space and colon
 	std::string msg = args.substr(colonPos + 1);
 	targets = split(targetsStr, ',');
 	for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
 		int FD = clientFdsearch(*it);
-		if(FD) {
+		if(FD > 0) {
 			std::string message = ":" + sender.getNickname() + "!" +
                 sender.getUsername() + "@localhost PRIVMSG " +
                 *it + " :" + msg + "\r\n";
 			std::cout << GREEN << "Sending message from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
-			send(FD, msg.c_str(), msg.size(), 0);
+			send(FD, message.c_str(), message.size(), 0);
 		}
+		else
+			sendError(*it, 401, sender);
 	}
 }

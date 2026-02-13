@@ -132,7 +132,7 @@ void Server::run() {
 			while (_clients[_fds[i].fd]->getBuffer() != "") {
 				std::string args = _clients[_fds[i].fd]->extractMessage();
 				std::string cmd = extractCMD(args); 
-				if (!executeCMD(cmd, args, _clients[_fds[i].fd])) {
+				if (!executeCMD(cmd, args, *_clients[_fds[i].fd])) {
 					_clients[_fds[i].fd]->clearBuffer();
 					disconnectClient(_fds[i].fd);
 					i--;
@@ -221,14 +221,14 @@ std::string Server::checkNickname(std::string arg) {
 }
 
 //Ira: if needed, can be deleted
-void Server::sendPing(Client* client) {
+void Server::sendPing(const Client& client) {
 	std::string token = "keepalive";
     std::string msg = ":server PING :" + token + "\r\n";
-    send(client->getFd(), msg.c_str(), msg.size(), 0);
+    send(client.getFd(), msg.c_str(), msg.size(), 0);
 }
 
 //Ira: execute commands
-bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
+bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 	if (cmd == "PASS") {
 		if (args != _password && !_password.empty()) {
 			if (DEBUG)
@@ -236,9 +236,9 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 			sendError(args, 464, client);
 			return (false); //Ira: returned here because if password is wrong we don't accept anything else and immediately disconnect this client
 		}
-		client->setHasPassword();
+		client.setHasPassword();
 		if (DEBUG)
-			std::cout << GREEN << "Client FD " << client->getFd() << " has input correct password" << ENDCOLOR << std::endl;
+			std::cout << GREEN << "Client FD " << client.getFd() << " has input correct password" << ENDCOLOR << std::endl;
 	}
 	else if (cmd == "NICK") {
 		std::string checkNick = checkNickname(args);
@@ -250,23 +250,27 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 			return (true);
 		}
 		else {
-			if (client->getNickname() != "") {
-				// [TO DO] (if NICK changes, need to send info for other users)
+			if (client.getNickname() != "") {
+				// [TO DO] (if NICK changes, need to send info to other users in channels)
+				std::string oldNick = client.getNickname();
+				std::string msg = ":" + oldNick + "!" + client.getUsername() +
+					"@localhost NICK :" + args + "\r\n";
+				send(client.getFd(), msg.c_str(), msg.size(), 0);
 				if (DEBUG)
-					std::cout << GREEN << "Nickname of client FD " << client->getFd() << " changed to: " << args << ENDCOLOR << std::endl;
+					std::cout << GREEN << "Nickname of client FD " << client.getFd() << " changed to: " << args << ENDCOLOR << std::endl;
 			}
 			else {
 				if (DEBUG)
-					std::cout << GREEN << "Nickname of new client FD " << client->getFd() << ": " << args << ENDCOLOR << std::endl;
+					std::cout << GREEN << "Nickname of new client FD " << client.getFd() << ": " << args << ENDCOLOR << std::endl;
 			}
-			client->setNickname(args);
+			client.setNickname(args);
 		}
-		if (!client->getRegistered())
-			if (!registerClient(*client))
+		if (!client.getRegistered())
+			if (!registerClient(client))
 				return (false);
 	}
 	else if (cmd == "USER") {
-		if (!client->getRegistered()) {
+		if (!client.getRegistered()) {
 			//Ira: USER command looks like USER <username> 0 * :<realname>
 			//clients usually use for username and realname the nickname, if it's not set by user
 			//to expect an empty username is an extra safety, but we have error massage for it so I included it
@@ -282,18 +286,18 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 				username.insert(0, 1, '~');
 				//Ira: IRCstandard: "... the username provided by the client SHOULD be prefixed 
 				// by a tilde ('~', 0x7E) to show that this value is user-set."
-			client->setUsername(username);
-			std::cout << GREEN << "Client FD " << client->getFd() << " username is " << client->getUsername() << ENDCOLOR << std::endl;
+			client.setUsername(username);
+			std::cout << GREEN << "Client FD " << client.getFd() << " username is " << client.getUsername() << ENDCOLOR << std::endl;
 			std::string realname = args.substr(args.find(':') + 1);
-			client->setRealname(realname);
-			std::cout << GREEN << "Client FD " << client->getFd() << " realname is " << client->getRealname() << ENDCOLOR << std::endl;
-			if (!registerClient(*client)) //Ira: registration if wasn't
+			client.setRealname(realname);
+			std::cout << GREEN << "Client FD " << client.getFd() << " realname is " << client.getRealname() << ENDCOLOR << std::endl;
+			if (!registerClient(client)) //Ira: registration if wasn't
 				return (false); // we need tu return smth for the case when client can't be registere because of password absence
 		}
 		else {
 			sendError(args, 462, client);
 			if (DEBUG)
-				std::cout << RED << "Client FD" << client->getFd() << "is already registered" << ENDCOLOR << std::endl;
+				std::cout << RED << "Client FD" << client.getFd() << "is already registered" << ENDCOLOR << std::endl;
 			return (true); 
 		}
 	}
@@ -305,41 +309,51 @@ bool Server::executeCMD(std::string cmd, std::string args, Client* client) {
 			std::cout << GREEN << "PING command was accepted and answered" << ENDCOLOR << std::endl;
 	}
 	else {
-		if (client->getRegistered()) {
+		if (client.getRegistered()) {
 			if (cmd == "PRIVMSG") {
 				if (args[0] != '#')
-					sendPrivateMsg(*client, args);
+					sendPrivateMsg(client, args);
 			}
 		}
 	}
 	return (true);
 }
 
-void Server::sendPong(Client* client, std::string token) {
+void Server::sendPong(const Client& client, std::string token) {
 	std::string msg = ":server PONG " + token + "\r\n";
-	send(client->getFd(), msg.c_str(), msg.size(), 0);
+	send(client.getFd(), msg.c_str(), msg.size(), 0);
 }
 
-void Server::sendError(std::string args, int errorNumber, Client* client) {
+void Server::sendError(std::string args, int errorNumber, const Client& client) {
 	std::string err;
-	if (errorNumber == 433)
+	switch (errorNumber){
+	case (401):
+		err = ":server 401 " + client.getNickname() + " " + args + " :No such nick/channel\r\n";
+		break;
+	case (433):
 		err = ":server 433 * " + args + " :Nickname is already in use\r\n";
-	else if (errorNumber == 432)
+		break;
+	case (432):
 		err = ":server 432 * " + args + " :Erroneus nickname\r\n";
-	else if (errorNumber == 464)
+		break;
+	case (464):
 		err = ":server 464 * :Password incorrect\r\n";
-	else if (errorNumber == 461)
+		break;
+	case (461):
 		err = ":server 461 USER :Not enough parameters\r\n";
-	else if (errorNumber == 462)
+		break;
+	case (462):
 		err = ":server 462 * :You may not reregister\r\n";
-	send(client->getFd(), err.c_str(), err.size(), 0);
+		break;
+	}
+	send(client.getFd(), err.c_str(), err.size(), 0);
 	if (DEBUG)
-		std::cout << PINK << "Error " << errorNumber << " for client FD " << client->getFd() << " has been sent!" << ENDCOLOR << std::endl;
+		std::cout << PINK << "Error " << errorNumber << " for client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }
 
 bool Server::registerClient(Client& client) {
 	if (!_password.empty() && !client.getHasPassword()) {
-		sendError(client.getNickname(), 464, &client);
+		sendError(client.getNickname(), 464, client);
 		return (false);
 	}
 	if (client.setRegistered()) { //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before

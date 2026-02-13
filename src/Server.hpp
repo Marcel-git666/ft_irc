@@ -31,9 +31,9 @@ private:
   void init();
   void acceptNewClient();
   void disconnectClient(int fd); //Ira: for removing when password is wrong
-  void sendError(const std::string args, int errorNumber, Client* client); //Ira: sending errors to the client
-  void sendPing(Client* client); //Ira: don't know if we need it, can be deleted
-  void sendPong(Client* client, std::string token); //Ira: for answering Clients PING if it comes
+  void sendError(const std::string args, int errorNumber, const Client& client); //Ira: sending errors to the client
+  void sendPing(const Client& client); //Ira: don't know if we need it, can be deleted
+  void sendPong(const Client& client, std::string token); //Ira: for answering Clients PING if it comes
   // OCF - Private to prevent copying
   Server(const Server &other);
   Server &operator=(const Server &other);
@@ -48,7 +48,7 @@ public:
   std::string extractCMD(std::string& args);
 
   //Ira: executer
-  bool executeCMD(std::string cmd, std::string args, Client* client); //return true if everithing ok
+  bool executeCMD(std::string cmd, std::string args, Client& client); //return true if everithing ok
 
   //Ira: utils
   std::string checkNickname(std::string arg); //for nickname uniqness
