@@ -326,7 +326,7 @@ void Server::sendPong(const Client& client, std::string token) {
 
 void Server::sendError(std::string args, int errorNumber, const Client& client) {
 	std::string err;
-	switch (errorNumber){
+	switch (errorNumber) {
 	case (401):
 		err = ":server 401 " + client.getNickname() + " " + args + " :No such nick/channel\r\n";
 		break;
