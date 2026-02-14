@@ -26,7 +26,7 @@ void Server::sendPrivateMsg(const Client& sender, std::string args) {
                 sender.getUsername() + "@localhost PRIVMSG " +
                 *it + " :" + msg + "\r\n";
 			std::cout << GREEN << "Sending message from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
-			send(FD, message.c_str(), message.size(), 0);
+			sendMsgToClient(message, *_clients[FD]);
 		}
 		else
 			sendError(*it, 401, sender);

@@ -253,9 +253,7 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 			if (client.getNickname() != "") {
 				// [TO DO] (if NICK changes, need to send info to other users in channels)
 				std::string oldNick = client.getNickname();
-				std::string msg = ":" + oldNick + "!" + client.getUsername() +
-					"@localhost NICK :" + args + "\r\n";
-				send(client.getFd(), msg.c_str(), msg.size(), 0);
+				sendMsgToClient(":" + oldNick + "!" + client.getUsername() + "@localhost NICK :" + args + "\r\n", client);
 				if (DEBUG)
 					std::cout << GREEN << "Nickname of client FD " << client.getFd() << " changed to: " << args << ENDCOLOR << std::endl;
 			}
@@ -314,41 +312,32 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 				if (args[0] != '#')
 					sendPrivateMsg(client, args);
 			}
+			if (cmd == "JOIN") {
+				if (args[0] != '#')
+					sendError(args, 403, client);
+				else
+					connectToChannel(client, args);
+			}
 		}
 	}
 	return (true);
 }
 
 void Server::sendPong(const Client& client, std::string token) {
-	std::string msg = ":server PONG " + token + "\r\n";
-	send(client.getFd(), msg.c_str(), msg.size(), 0);
+	sendMsgToClient(":server PONG " + token + "\r\n", client);
 }
 
 void Server::sendError(std::string args, int errorNumber, const Client& client) {
-	std::string err;
-	switch (errorNumber) {
-	case (401):
-		err = ":server 401 " + client.getNickname() + " " + args + " :No such nick/channel\r\n";
-		break;
-	case (433):
-		err = ":server 433 * " + args + " :Nickname is already in use\r\n";
-		break;
-	case (432):
-		err = ":server 432 * " + args + " :Erroneus nickname\r\n";
-		break;
-	case (464):
-		err = ":server 464 * :Password incorrect\r\n";
-		break;
-	case (461):
-		err = ":server 461 USER :Not enough parameters\r\n";
-		break;
-	case (462):
-		err = ":server 462 * :You may not reregister\r\n";
-		break;
-	}
+	std::string err = GetErrorStr(args, errorNumber, client);
 	send(client.getFd(), err.c_str(), err.size(), 0);
 	if (DEBUG)
 		std::cout << PINK << "Error " << errorNumber << " for client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
+}
+
+void Server::sendMsgToClient(std::string msg, const Client& client) {
+	send(client.getFd(), msg.c_str(), msg.size(), 0);
+	if (DEBUG)
+		std::cout << GREEN << "Message from server for client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }
 
 bool Server::registerClient(Client& client) {
@@ -358,17 +347,17 @@ bool Server::registerClient(Client& client) {
 	}
 	if (client.setRegistered()) { //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
 	std::string msg = ":server 001 " + client.getNickname() + " :Welcome to the IRC Network, " + client.getNickname() + "\r\n";
-		send(client.getFd(), msg.c_str(), msg.size(), 0);
+		sendMsgToClient(msg, client);
 		//Ira: messages below isn't obligated, but I did it to be more like the original IRC protocol
 		msg = ":server 002 :Your host is 42_ircserv, running version 01\r\n";
-		send(client.getFd(), msg.c_str(), msg.size(), 0);
+		sendMsgToClient(msg, client);
 		msg = ":server 003 :This server was created " + _creationTime + "\r\n";
-		send(client.getFd(), msg.c_str(), msg.size(), 0);
+		sendMsgToClient(msg, client);
 		// format: 004 <nick> <servername> <version> <usermodes> <channelmodes>
 		// usermodes = o -operators 
 		// channelmodes = i  (invite-only); t  (topic restricted); k  (key/password); o  (channel operator); l  (user limit)
 		msg = ":server 004 " + client.getNickname() + " 42_ircserv 1.0 o itkol\r\n"; 
-		send(client.getFd(), msg.c_str(), msg.size(), 0);
+		sendMsgToClient(msg, client);
 		if (DEBUG) {
 			std::cout << GREEN << "Client FD " << client.getFd() << " has been registered" << ENDCOLOR << std::endl;
 			std::cout << client << std::endl;

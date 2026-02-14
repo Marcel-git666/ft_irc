@@ -11,7 +11,12 @@ OBJ_DIR     = obj
 
 # === Files ===
 # Just list the filenames here!
-SRC_FILES   = main.cpp Server.cpp Client.cpp Channel.cpp PrivateMsg.cpp
+SRC_FILES   =	main.cpp \
+				Server.cpp \
+				Client.cpp \
+				Channel.cpp \
+				ErrorList.cpp \
+				PrivateMsg.cpp \
 
 # addprefix adds "src/" to the start of every word in SRC_FILES
 SRCS        = $(addprefix $(SRC_DIR)/, $(SRC_FILES))
