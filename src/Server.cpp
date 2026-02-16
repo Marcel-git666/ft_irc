@@ -311,13 +311,18 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 			if (cmd == "PRIVMSG") {
 				if (args[0] != '#')
 					sendPrivateMsg(client, args);
+				else
+					sendToChannel(client, args);
 			}
-			if (cmd == "JOIN") {
+			else if (cmd == "JOIN") {
 				if (args[0] != '#')
 					sendError(args, 403, client);
 				else
-					connectToChannel(client, args);
+					connectToChannel(&client, args);
 			}
+			// else if (cmd == "KICK") {
+			// 	kickOutOfChannel(&client, args);
+			// }
 		}
 	}
 	return (true);

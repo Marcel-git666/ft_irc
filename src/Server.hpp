@@ -64,10 +64,10 @@ public:
   void sendPrivateMsg(const Client& client, std::string args);
 
   //channel operations
-  void createNewChannel(Client* client, std::string& name);
   void connectToChannel(Client* client, std::string& channelName);
   Channel* searchChannel(const std::string& name);
-
+  void sendToChannel(Client &sender, std::string args);
+//   void kickOutOfChannel(Client &client, std::string args);
 };
 
 #endif

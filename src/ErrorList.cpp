@@ -4,7 +4,7 @@ std::string Server::GetErrorStr(std::string args, int errorNumber, const Client&
 	switch (errorNumber) {
 	case (401):
 		return(":server 401 " + client.getNickname() + " " + args + " :No such nick/channel\r\n");
-	case (403)
+	case (403):
 		return(":server 403 " + client.getNickname() + " " + args + " :No such channel\r\n");
 	case (433):
 		return(":server 433 * " + args + " :Nickname is already in use\r\n");

@@ -33,3 +33,23 @@ void Channel::addMember(Client *newMember) {
 void Channel::addOperator(Client *newOper) {
 	_operators.push_back(newOper);
 }
+
+bool Channel::clientIsOperator(Client *client) {
+	for (std::vector<Client*>::iterator it = _operators.begin(); it != _operators.end(); it++) {
+		if (*it == client)
+			return (true);
+	}
+	return (false);
+}
+
+bool Channel::clientIsMember(Client *client) {
+	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
+		if (*it == client)
+			return (true);
+	}
+	return (false);
+}
+
+std::vector<Client *> Channel::getMembers() {
+	return (_members);
+}

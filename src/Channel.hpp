@@ -29,7 +29,10 @@ public:
 	void addMember(Client *newMember);
 	void addOperator(Client *newOper);
 
+	bool clientIsOperator(Client *client);
+	bool clientIsMember(Client *client);
 
+	std::vector<Client *> getMembers();
 };
 
 std::ostream& operator<<(std::ostream& out, const Channel& channel);
