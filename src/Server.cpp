@@ -147,6 +147,7 @@ void Server::run() {
 }
 
 
+
 void Server::acceptNewClient() {
   struct sockaddr_in clientAddr;
   socklen_t clientAddrLen = sizeof(clientAddr);

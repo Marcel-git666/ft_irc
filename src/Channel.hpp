@@ -22,6 +22,10 @@ public:
 	~Channel();
 
 	//GETTERS
+	std::vector<Client *> getMembers();
+	std::vector<Client *> getOperators();
+	std::string getTopic();
+	std::string getChName();
 
 	//SETTERS
 	void setTopic(std::string topic);
@@ -32,7 +36,7 @@ public:
 	bool clientIsOperator(Client *client);
 	bool clientIsMember(Client *client);
 
-	std::vector<Client *> getMembers();
+
 };
 
 std::ostream& operator<<(std::ostream& out, const Channel& channel);

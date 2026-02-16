@@ -1,6 +1,6 @@
 #include "Channel.hpp"
 
-Channel::Channel() : _name(""), _topic("") {}
+Channel::Channel() : _members(), _operators(), _name(""), _topic("") {}
 
 Channel::Channel(Client *client, std::string name) : _name(name), _topic("") {
 	addMember(client);
@@ -52,4 +52,16 @@ bool Channel::clientIsMember(Client *client) {
 
 std::vector<Client *> Channel::getMembers() {
 	return (_members);
+}
+
+std::vector<Client *> Channel::getOperators() {
+	return (_operators);
+}
+
+std::string Channel::getTopic() {
+	return (_topic);
+}
+
+std::string Channel::getChName() {
+	return (_name);
 }

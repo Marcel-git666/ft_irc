@@ -67,6 +67,7 @@ public:
   void connectToChannel(Client* client, std::string& channelName);
   Channel* searchChannel(const std::string& name);
   void sendToChannel(Client &sender, std::string args);
+  void sendNames(Channel& ch, Client *client);
 //   void kickOutOfChannel(Client &client, std::string args);
 };
 
