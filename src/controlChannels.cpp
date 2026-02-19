@@ -69,7 +69,30 @@ void Server::sendNames(Channel& ch, Client *client) {
 	sendMsgToClient(msg, *client);
 }
 
-
+void Server::inviteToChan(Client& sender, std::string args) {
+	std::vector<std::string> targets;
+	size_t hashtagPos = args.find("#");
+	if (hashtagPos != std::string::npos) {
+		std::string targetsStr = args.substr(0, hashtagPos - 1); //Ira: need to cut space and colon
+		targets = split(targetsStr, ',');
+		std::string msg = args.substr(hashtagPos);
+		for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
+			int FD = clientFdsearch(*it);
+			if(FD > 0) {
+				std::string message = ":" + sender.getNickname() + "!" +
+	                sender.getUsername() + "@localhost INVITE " +
+	                *it + " " + msg + "\r\n";
+				std::cout << GREEN << "Sending message from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
+				sendMsgToClient(message, *_clients[FD]);
+			}
+			else
+				sendError(*it, 401, sender);
+		}
+	}
+	else {
+		sendError(args, 403, sender);
+	}
+}
 // void Server::kickOutOfChannel(Client &client, std::string args) {
 	
 // }

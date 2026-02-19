@@ -93,6 +93,9 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 				else
 					connectToChannel(&client, args);
 			}
+			else if (cmd == "INVITE"){
+				inviteToChan(client, args);
+			}
 			// else if (cmd == "KICK") {
 			// 	kickOutOfChannel(&client, args);
 			// }
