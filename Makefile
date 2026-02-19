@@ -15,8 +15,9 @@ SRC_FILES   =	main.cpp \
 				Server.cpp \
 				Client.cpp \
 				Channel.cpp \
-				ErrorList.cpp \
-				PrivateMsg.cpp \
+				cmdHandling.cpp \
+				errorList.cpp \
+				privateMsg.cpp \
 				controlChannels.cpp
 
 # addprefix adds "src/" to the start of every word in SRC_FILES
