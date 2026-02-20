@@ -39,6 +39,7 @@ public:
 	bool clientIsMember(int FD);
 
 
+	void deleteClient(int FD);
 };
 
 std::ostream& operator<<(std::ostream& out, const Channel& channel);

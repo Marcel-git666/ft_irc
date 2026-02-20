@@ -107,6 +107,13 @@ void Server::inviteToChan(Client& sender, std::string args) {
 		sendError(args, 403, sender);
 	}
 }
+
+void Server::deleteClientFromChannels(int FD) {
+	for (std::map<std::string, Channel>::iterator it = _channels.begin(); it != _channels.end(); it++) {
+		it->second.deleteClient(FD);
+	}
+}
+
 // void Server::kickOutOfChannel(Client &client, std::string args) {
 	
 // }

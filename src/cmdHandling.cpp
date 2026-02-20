@@ -79,6 +79,8 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 		if (DEBUG)
 			std::cout << GREEN << "PING command was accepted and answered" << ENDCOLOR << std::endl;
 	}
+	else if (cmd == "QUIT")
+		disconnectClient(client.getFd());
 	else {
 		if (client.getRegistered()) {
 			if (cmd == "PRIVMSG") {

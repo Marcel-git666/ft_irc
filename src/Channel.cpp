@@ -81,3 +81,14 @@ std::string Channel::getTopic() {
 std::string Channel::getChName() {
 	return (_name);
 }
+
+void Channel::deleteClient(int FD) {
+	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
+		if ((*it)->getFd() == FD)
+			_members.erase(it);
+	}
+	for (std::vector<Client*>::iterator itOp = _operators.begin(); itOp != _operators.end(); itOp++) {
+		if ((*itOp)->getFd() == FD)
+			_operators.erase(itOp);
+	}
+}

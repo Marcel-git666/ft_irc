@@ -68,6 +68,7 @@ public:
   void sendToChannel(Client &sender, std::string args);
   void sendNames(Channel& ch, Client *client);
   void inviteToChan(Client &sender, std::string args);
+  void deleteClientFromChannels(int FD);
 
 //   void kickOutOfChannel(Client &client, std::string args);
   std::vector<std::string> split(const std::string& targetsStr, char delimeter);

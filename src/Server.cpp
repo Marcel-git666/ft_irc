@@ -183,6 +183,7 @@ void Server::disconnectClient(int fd) {
     std::cout << "Client FD " << fd << " disconnected." << std::endl;
 
     close(fd);
+	deleteClientFromChannels(fd);
     delete _clients[fd];
     _clients.erase(fd);
 
