@@ -10,6 +10,8 @@ std::string Server::GetErrorStr(std::string args, int errorNumber, const Client&
 		return(":server 433 * " + args + " :Nickname is already in use\r\n");
 	case (432):
 		return(":server 432 * " + args + " :Erroneus nickname\r\n");
+	case (443):
+		return(":server 443 " + args + " :is already on channel\r\n");
 	case (464):
 		return(":server 464 * :Password incorrect\r\n");
 	case (461):

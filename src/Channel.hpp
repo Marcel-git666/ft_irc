@@ -26,6 +26,7 @@ public:
 	std::vector<Client *> getOperators();
 	std::string getTopic();
 	std::string getChName();
+	Client* getClientFromChan(int FD);
 
 	//SETTERS
 	void setTopic(std::string topic);
@@ -35,6 +36,7 @@ public:
 
 	bool clientIsOperator(Client *client);
 	bool clientIsMember(Client *client);
+	bool clientIsMember(int FD);
 
 
 };

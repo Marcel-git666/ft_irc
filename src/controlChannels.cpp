@@ -11,7 +11,9 @@ void Server::connectToChannel(Client* client, std::string& name) {
 		ch->addMember(client);
 	}
 	std::string msg = ":" + client->getNickname() + "!" + client->getUsername() + "@localhost JOIN " + name + "\r\n";
-	sendMsgToClient(msg, *client);
+	std::vector<Client*> members = ch->getMembers();
+	for (size_t i = 0; i < members.size(); i++) //Ira: we need to send info about member joined to all of the channel members
+		sendMsgToClient(msg, *members[i]);
 	std::string topic = ch->getTopic();
 	if (topic != "")
 		msg = ":server 332 " + client->getNickname() + " " + name + ":" + topic + "\r\n";
@@ -72,18 +74,30 @@ void Server::sendNames(Channel& ch, Client *client) {
 void Server::inviteToChan(Client& sender, std::string args) {
 	std::vector<std::string> targets;
 	size_t hashtagPos = args.find("#");
+	std::string chanName = args.substr(hashtagPos);
+	Channel *ch = searchChannel(chanName);
+	if (!ch) { //check if channel exists
+		sendError(chanName, 403, sender);
+		return ;
+	}
 	if (hashtagPos != std::string::npos) {
-		std::string targetsStr = args.substr(0, hashtagPos - 1); //Ira: need to cut space and colon
+		std::string targetsStr = args.substr(0, hashtagPos - 1); //Ira: need to cut space and hashtag
 		targets = split(targetsStr, ',');
 		std::string msg = args.substr(hashtagPos);
 		for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
 			int FD = clientFdsearch(*it);
+			if (FD == sender.getFd())
+				continue;
 			if(FD > 0) {
-				std::string message = ":" + sender.getNickname() + "!" +
-	                sender.getUsername() + "@localhost INVITE " +
-	                *it + " " + msg + "\r\n";
-				std::cout << GREEN << "Sending message from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
-				sendMsgToClient(message, *_clients[FD]);
+				if (!ch->clientIsMember(FD)) {
+					std::string message = ":" + sender.getNickname() + "!" +
+						sender.getUsername() + "@localhost INVITE " +
+						*it + " " + msg + "\r\n";
+					std::cout << GREEN << "Sending message from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
+					sendMsgToClient(message, *_clients[FD]);
+				}
+				else
+					sendError(_clients[FD]->getNickname() + " " + chanName, 443, sender);
 			}
 			else
 				sendError(*it, 401, sender);

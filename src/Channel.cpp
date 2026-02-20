@@ -50,12 +50,28 @@ bool Channel::clientIsMember(Client *client) {
 	return (false);
 }
 
+bool Channel::clientIsMember(int FD) {
+	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
+		if ((*it)->getFd() == FD)
+			return (true);
+	}
+	return (false);
+}
+
 std::vector<Client *> Channel::getMembers() {
 	return (_members);
 }
 
 std::vector<Client *> Channel::getOperators() {
 	return (_operators);
+}
+
+Client* Channel::getClientFromChan(int FD) {
+	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
+		if ((*it)->getFd() == FD)
+			return (*it);
+	}
+	return (NULL);
 }
 
 std::string Channel::getTopic() {
