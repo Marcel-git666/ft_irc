@@ -58,6 +58,15 @@ bool Channel::clientIsMember(int FD) {
 	return (false);
 }
 
+bool Channel::clientIsMember(std::string clientNickname) {
+	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
+		if ((*it)->getNickname() == clientNickname)
+			return (true);
+	}
+	return (false);
+}
+
+
 std::vector<Client *> Channel::getMembers() {
 	return (_members);
 }
@@ -84,11 +93,30 @@ std::string Channel::getChName() {
 
 void Channel::deleteClient(int FD) {
 	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
-		if ((*it)->getFd() == FD)
+		if ((*it)->getFd() == FD) {
 			_members.erase(it);
+			break ;
+		}
 	}
 	for (std::vector<Client*>::iterator itOp = _operators.begin(); itOp != _operators.end(); itOp++) {
-		if ((*itOp)->getFd() == FD)
+		if ((*itOp)->getFd() == FD) {
 			_operators.erase(itOp);
+			break ;
+		}
+	}
+}
+
+void Channel::deleteClient(std::string clientNickname) {
+	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
+		if ((*it)->getNickname() == clientNickname) {
+			_members.erase(it);
+			break ;
+		}
+	}
+	for (std::vector<Client*>::iterator itOp = _operators.begin(); itOp != _operators.end(); itOp++) {
+		if ((*itOp)->getNickname() == clientNickname) {
+			_operators.erase(itOp);
+			break ;
+		}
 	}
 }

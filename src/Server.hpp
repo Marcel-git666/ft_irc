@@ -62,16 +62,20 @@ public:
   void sendPrivateMsg(const Client& client, std::string args);
 
 
-  //channel operations
+  //Ira: channel operations
   void connectToChannel(Client* client, std::string& channelName);
+  void kickOutOfChannel(Client &client, std::string args);
+  void inviteToChan(Client &sender, std::string args);
+
+  //Ira: utils for channelCMD
   Channel* searchChannel(const std::string& name);
   void sendToChannel(Client &sender, std::string args);
   void sendNames(Channel& ch, Client *client);
-  void inviteToChan(Client &sender, std::string args);
+  std::vector<std::string> split(const std::string& targetsStr, char delimeter);
+
+  //Ira: for cleaning when client disconnecting
   void deleteClientFromChannels(int FD);
 
-//   void kickOutOfChannel(Client &client, std::string args);
-  std::vector<std::string> split(const std::string& targetsStr, char delimeter);
 
 };
 

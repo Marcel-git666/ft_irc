@@ -37,8 +37,9 @@ public:
 	bool clientIsOperator(Client *client);
 	bool clientIsMember(Client *client);
 	bool clientIsMember(int FD);
+	bool clientIsMember(std::string clientNickname);
 
-
+	void deleteClient(std::string clientNickname);
 	void deleteClient(int FD);
 };
 

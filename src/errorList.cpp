@@ -10,6 +10,10 @@ std::string Server::GetErrorStr(std::string args, int errorNumber, const Client&
 		return(":server 433 * " + args + " :Nickname is already in use\r\n");
 	case (432):
 		return(":server 432 * " + args + " :Erroneus nickname\r\n");
+	case (441):
+		return(":server 441 " + args + " :They aren't on that channel\r\n");
+	case (442):
+		return(":server 442 " + client.getNickname() + " " + args + " :You're not on that channel\r\n");
 	case (443):
 		return(":server 443 " + args + " :is already on channel\r\n");
 	case (464):
@@ -18,6 +22,8 @@ std::string Server::GetErrorStr(std::string args, int errorNumber, const Client&
 		return(":server 461 USER :Not enough parameters\r\n");
 	case (462):
 		return(":server 462 * :You may not reregister\r\n");
+	case (482):
+		return(":server 482 " + client.getNickname() + " " + args + " :You're not channel operator\r\n");
 	}
 	return ("");
 }
