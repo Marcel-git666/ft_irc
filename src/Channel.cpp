@@ -1,10 +1,32 @@
 #include "Channel.hpp"
 
-Channel::Channel() : _members(), _operators(), _name(""), _topic("") {}
+Channel::Channel() : _members(), _operators(), _invited(), _name(""), _topic(""), _modes(""), _key("") {
+	_invite_only = false;
+	_topic_restrictions = false;
+	_key_settings = false;
+	_user_limit =  -1;
+}
 
-Channel::Channel(Client *client, std::string name) : _name(name), _topic("") {
+Channel::Channel(Client *client, std::string name) : _invited(), _name(name), _topic(""), _modes(""), _key("") {
 	addMember(client);
 	addOperator(client);
+	_invite_only = false;
+	_topic_restrictions = false;
+	_key_settings = false;
+	_user_limit =  -1;
+}
+
+Channel::Channel(const Channel &other) {
+	_members = other._members;
+	_operators = other._operators;
+	_name = other._name;
+	_topic = other._topic;
+	_modes = other._modes;
+	_key = other._key;
+	_invite_only = other._invite_only;
+	_topic_restrictions = other._topic_restrictions;
+	_key_settings = other._key_settings;
+	_user_limit =  other._user_limit;
 }
 
 Channel& Channel::operator=(const Channel &other) {
@@ -13,15 +35,14 @@ Channel& Channel::operator=(const Channel &other) {
 		_operators = other._operators;
 		_name = other._name;
 		_topic = other._topic;
+		_modes = other._modes;
+		_key = other._key;
+		_invite_only = other._invite_only;
+		_topic_restrictions = other._topic_restrictions;
+		_key_settings = other._key_settings;
+		_user_limit =  other._user_limit;
 	}
 	return (*this);
-}
-
-Channel::Channel(const Channel &other) {
-	_members = other._members;
-	_operators = other._operators;
-	_name = other._name;
-	_topic = other._topic;
 }
 
 Channel::~Channel() {}
@@ -91,6 +112,27 @@ std::string Channel::getChName() {
 	return (_name);
 }
 
+std::string Channel::getModestring() {
+	return (this->_modestring);
+}
+
+bool Channel::getKeySetting() {
+	return(this->_key_settings);
+}
+
+bool  Channel::getTopicRestr() {
+	return(this->_topic_restrictions);
+}
+
+bool  Channel::getInviteSettings() {
+	return(this->_invite_only);
+}
+
+int  Channel::getUserLimit() {
+	return(this->_user_limit);
+}
+
+
 void Channel::deleteClient(int FD) {
 	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
 		if ((*it)->getFd() == FD) {
@@ -119,4 +161,21 @@ void Channel::deleteClient(std::string clientNickname) {
 			break ;
 		}
 	}
+}
+
+bool Channel::addMode(char mode) {
+	if (mode == 'i' || mode == 'k' || mode == 't' || mode == 'l') {
+		this->_modes += mode;
+		return (true);
+	}
+	return (false);
+}
+
+bool Channel::delMode(char mode) {
+	size_t pos = this->_modes.find(mode);
+	if (pos != std::string::npos) {
+		_modes.erase(pos);
+		return (true);
+	}
+	return (false);
 }

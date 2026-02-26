@@ -18,7 +18,8 @@ SRC_FILES   =	main.cpp \
 				cmdHandling.cpp \
 				errorList.cpp \
 				privateMsg.cpp \
-				controlChannels.cpp
+				controlChannels.cpp \
+				modeChannel.cpp
 
 # addprefix adds "src/" to the start of every word in SRC_FILES
 SRCS        = $(addprefix $(SRC_DIR)/, $(SRC_FILES))

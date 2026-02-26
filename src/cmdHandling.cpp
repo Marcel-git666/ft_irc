@@ -93,13 +93,19 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 				if (args[0] != '#')
 					sendError(args, 403, client);
 				else
-					connectToChannel(&client, args);
+					joinChannel(&client, args);
 			}
 			else if (cmd == "INVITE"){
 				inviteToChan(client, args);
 			}
 			else if (cmd == "KICK") {
 				kickOutOfChannel(client, args);
+			}
+			else if (cmd == "MODE") {
+				if (args[0] != '#')
+					sendError(args, 403, client);
+				else
+					operateMode(client, args);
 			}
 		}
 	}

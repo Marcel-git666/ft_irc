@@ -22,6 +22,8 @@ std::string Server::GetErrorStr(std::string args, int errorNumber, const Client&
 		return(":server 461 USER :Not enough parameters\r\n");
 	case (462):
 		return(":server 462 * :You may not reregister\r\n");
+	case (472):
+		return(":server 472 " + args + " :is unknown mode char to me\r\n");
 	case (482):
 		return(":server 482 " + client.getNickname() + " " + args + " :You're not channel operator\r\n");
 	}

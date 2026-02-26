@@ -22,6 +22,19 @@ void Server::connectToChannel(Client* client, std::string& name) {
 	sendNames(*ch, client);
 }
 
+void Server::joinChannel(Client* client, std::string& args) {
+	std::vector<std::string> targets;
+	size_t commaPos = args.find(","); //Ira: client send a list of channels he wants to join separated by commas
+	if (commaPos != std::string::npos) {
+		targets = split(args, ',');
+	}
+	else
+		targets.push_back(args);
+	for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
+		connectToChannel(client, *it);
+	}
+}
+
 Channel* Server::searchChannel(const std::string& channelName) {
 	std::map<std::string, Channel>::iterator it = _channels.find(channelName);
 	if (it != _channels.end())
@@ -168,3 +181,5 @@ void Server::kickOutOfChannel(Client &sender, std::string args) {
 		}
 	}
 }
+
+
