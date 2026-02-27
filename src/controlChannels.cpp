@@ -8,6 +8,7 @@ void Server::connectToChannel(Client* client, std::string& name) {
 		ch = &result.first->second; // safe pointer
 	}
 	else {
+		//[ToDo] need to check channel modes and connect if it can
 		ch->addMember(client);
 	}
 	std::string msg = ":" + client->getNickname() + "!" + client->getUsername() + "@localhost JOIN " + name + "\r\n";
@@ -101,18 +102,19 @@ void Server::inviteToChan(Client& sender, std::string args) {
 		targets = split(targetsStr, ',');
 		std::string msg = args.substr(hashtagPos);
 		for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
-			int FD = clientFdsearch(*it);
-			if (FD == sender.getFd())
-				continue;
+			int FD = clientFdsearch(*it); //Ira: need to find if client exists
+			if (FD == sender.getFd()) //Ira: avoiding to send invitation to himself
+				continue ;
 			if(FD > 0) {
-				if (!ch->clientIsMember(FD)) {
+				if (!ch->clientIsMember(FD)) { //Ira: if client isn't a member of channel
 					std::string message = ":" + sender.getNickname() + "!" +
 						sender.getUsername() + "@localhost INVITE " +
 						*it + " " + msg + "\r\n";
 					std::cout << GREEN << "Sending message from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
-					sendMsgToClient(message, *_clients[FD]);
+					sendMsgToClient(message, *_clients[FD]); 
+					ch->addInvited(FD);
 				}
-				else
+				else //Ira:client already on channel
 					sendError(_clients[FD]->getNickname() + " " + chanName, 443, sender);
 			}
 			else

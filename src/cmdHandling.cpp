@@ -47,7 +47,7 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 			//to expect an empty username is an extra safety, but we have error massage for it so I included it
 			std::string username = args.substr(0, args.find(' ')); //find first arg
 			if (username.empty())
-				sendError(args, 461, client);
+				sendError("USER", 461, client);
 			if (username.length() > USERLEN) {
 				username = username.substr(0, USERLEN);
 				//Ira: IRCstandard: "If this length is advertised, the username 

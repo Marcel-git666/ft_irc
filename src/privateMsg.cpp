@@ -32,3 +32,4 @@ void Server::sendPrivateMsg(const Client& sender, std::string args) {
 			sendError(*it, 401, sender);
 	}
 }
+

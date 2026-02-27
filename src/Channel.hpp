@@ -2,12 +2,13 @@
 
 #include "Client.hpp"
 #include <vector>
+#include <sstream>
 
 class Channel {
 private:
 	std::vector<Client *> _members;
 	std::vector<Client *> _operators;
-	std::vector<Client *> _invited;
+	std::vector<int> _invited_FD;
 	std::string _name;
 	std::string _topic;
 	std::string _modes;
@@ -15,6 +16,7 @@ private:
 	bool _invite_only;
 	bool _topic_restrictions;
 	bool _key_settings;
+	bool _has_limit;
 	int _user_limit;
 
 	// OCF - Private to prevent copying
@@ -44,6 +46,7 @@ public:
 
 	void addMember(Client *newMember);
 	void addOperator(Client *newOper);
+	void addInvited(int FD_inv);
 
 	bool clientIsOperator(Client *client);
 	bool clientIsMember(Client *client);
@@ -54,7 +57,7 @@ public:
 	void deleteClient(int FD);
 
 	//MODES
-	bool addMode(char mode);
+	int addMode(char mode, std::vector<std::string>& modeARGs);
 	bool delMode(char mode);
 };
 

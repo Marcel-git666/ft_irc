@@ -19,7 +19,7 @@ std::string Server::GetErrorStr(std::string args, int errorNumber, const Client&
 	case (464):
 		return(":server 464 * :Password incorrect\r\n");
 	case (461):
-		return(":server 461 USER :Not enough parameters\r\n");
+		return(":server 461 " + args + " :Not enough parameters\r\n");
 	case (462):
 		return(":server 462 * :You may not reregister\r\n");
 	case (472):
