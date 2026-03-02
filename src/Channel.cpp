@@ -2,7 +2,7 @@
 
 Channel::Channel() : _members(), _operators(), _invited_FD(), _name(""), _topic(""), _modes(""), _key(""), _limit_string("") {
 	_invite_only = false;
-	_topic_restrictions = false;
+	_topic_restricted = false;
 	_key_settings = false;
 	_limit_numeric =  -1;
 }
@@ -11,7 +11,7 @@ Channel::Channel(Client *client, std::string name) : _invited_FD(), _name(name),
 	addMember(client);
 	addOperator(client);
 	_invite_only = false;
-	_topic_restrictions = false;
+	_topic_restricted = false;
 	_key_settings = false;
 	_has_limit = false;
 	_limit_numeric =  -1;
@@ -26,7 +26,7 @@ Channel::Channel(const Channel &other) {
 	_modes = other._modes;
 	_key = other._key;
 	_invite_only = other._invite_only;
-	_topic_restrictions = other._topic_restrictions;
+	_topic_restricted = other._topic_restricted;
 	_key_settings = other._key_settings;
 	_has_limit = other._has_limit;
 	_limit_numeric =  other._limit_numeric;
@@ -43,7 +43,7 @@ Channel& Channel::operator=(const Channel &other) {
 		_modes = other._modes;
 		_key = other._key;
 		_invite_only = other._invite_only;
-		_topic_restrictions = other._topic_restrictions;
+		_topic_restricted = other._topic_restricted;
 		_key_settings = other._key_settings;
 		_limit_numeric =  other._limit_numeric;
 		_limit_string = other._limit_string;
@@ -143,7 +143,7 @@ bool Channel::getKeySetting() {
 }
 
 bool  Channel::getTopicRestr() {
-	return (this->_topic_restrictions);
+	return (this->_topic_restricted);
 }
 
 bool  Channel::getInviteSettings() {
@@ -209,7 +209,7 @@ int Channel::addMode(char mode, std::vector<std::string>& modeARGs) {
 			return (0);
 		case ('t'):
 			this->_modes += mode;
-			this->_topic_restrictions = true;
+			this->_topic_restricted = true;
 			return (0);
 		case ('l'): {
 			if (modeARGs.empty()) //Ira: if no argument from user
@@ -247,7 +247,7 @@ bool Channel::delMode(char mode) {
 			_invited_FD.clear();
 		}
 		else if (mode == 't') {
-			_topic_restrictions = false;
+			_topic_restricted = false;
 			_topic.clear();
 		}
 		return (true);
@@ -270,4 +270,8 @@ void Channel::removeFromInvited(int FD) {
 			break;
 		}
 	}
+}
+
+void Channel::setTopic(std::string topic) {
+	this->_topic = topic;
 }

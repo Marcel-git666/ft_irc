@@ -70,7 +70,9 @@ public:
   void operateMode(Client& sender, std::string);
   void applyMode(Client& sender, Channel* chan, std::string modestring);
   void sendChanMode(Client& sender, Channel* chan);
+  void setTopic(Client& client, std::string& args);
 
+  void broadcastChannel(Channel* ch, std::string command, std::string topic, Client& sender);
 
   //Ira: utils for channelCMD
   Channel* searchChannel(const std::string& name);

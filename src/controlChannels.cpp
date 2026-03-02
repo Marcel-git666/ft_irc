@@ -83,6 +83,18 @@ void Server::sendToChannel(Client &sender, std::string args) {
 	}
 }
 
+void Server::broadcastChannel(Channel* ch, std::string command, std::string topic, Client& sender) {
+	if (ch->clientIsMember(&sender)) {
+			std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost " + command + " " + ch->getChName() + " :" + topic + "\r\n";
+			std::vector<Client*> members = ch->getMembers();
+			for (size_t i = 0; i < members.size(); i++) {
+					sendMsgToClient(msg, *members[i]);
+			}
+		}
+		else
+			sendError(ch->getChName(), 442, sender);
+}
+
 void Server::sendNames(Channel& ch, Client *client) {
 	std::vector<Client*> members = ch.getMembers();
 	std::vector<Client*> operators = ch.getOperators();
@@ -207,4 +219,22 @@ void Server::kickOutOfChannel(Client &sender, std::string args) {
 	}
 }
 
-
+void Server::setTopic(Client& sender, std::string& args) {
+	size_t spacePos = args.find(" ");
+	size_t colonPos = args.find(":");
+	std::string topic = args.substr(colonPos + 1);
+	std::string chanName = args.erase(spacePos);
+	Channel *ch = searchChannel(chanName);
+	if (!ch) { //check if channel exists
+		sendError(chanName, 403, sender);
+		return ;
+	}
+	else {
+		if (ch->getTopicRestr() && !ch->clientIsOperator(&sender)) {
+			sendError(chanName, 482, sender);
+			return ;
+		}
+		ch->setTopic(topic);
+		broadcastChannel(ch, "TOPIC", topic, sender);
+	}
+}

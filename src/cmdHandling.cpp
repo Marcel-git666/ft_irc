@@ -107,6 +107,12 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 				else
 					operateMode(client, args);
 			}
+			else if (cmd == "TOPIC") {
+				if (args[0] != '#')
+					sendError(args, 403, client);
+				else
+					setTopic(client, args);
+			}
 		}
 	}
 	return (true);
