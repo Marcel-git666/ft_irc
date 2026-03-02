@@ -1,6 +1,6 @@
 #include "Server.hpp"
 
-void Server::connectToChannel(Client* client, std::string& name) {
+void Server::connectToChannel(Client* client, std::string& name, std::string key) {
 	Channel *ch = searchChannel(name);
 	if (!ch) {
 		std::pair<std::map<std::string, Channel>::iterator, bool> result;
@@ -8,8 +8,21 @@ void Server::connectToChannel(Client* client, std::string& name) {
 		ch = &result.first->second; // safe pointer
 	}
 	else {
-		//[ToDo] need to check channel modes and connect if it can
+		if (ch->getKeySetting() && key != ch->getKey()) {
+			sendError(ch->getChName(), 475, *client);
+			return ;
+		}
+		if (ch->getInviteSettings() && !ch->userInvited(client->getFd())) {
+			sendError(ch->getChName(), 473, *client);
+			return ;
+		}
+		if (ch->isFull()) {
+			sendError(ch->getChName(), 471, *client);
+			return ;
+		}
 		ch->addMember(client);
+		if (ch->getInviteSettings())
+			ch->removeFromInvited(client->getFd());
 	}
 	std::string msg = ":" + client->getNickname() + "!" + client->getUsername() + "@localhost JOIN " + name + "\r\n";
 	std::vector<Client*> members = ch->getMembers();
@@ -17,22 +30,28 @@ void Server::connectToChannel(Client* client, std::string& name) {
 		sendMsgToClient(msg, *members[i]);
 	std::string topic = ch->getTopic();
 	if (topic != "")
-		msg = ":server 332 " + client->getNickname() + " " + name + ":" + topic + "\r\n";
+		msg = ":server 332 " + client->getNickname() + " " + name + " :" + topic + "\r\n";
 	else
-		msg = ":server 331 " + client->getNickname() + " " + name + ":No topic is set\r\n";
+		msg = ":server 331 " + client->getNickname() + " " + name + " :No topic is set\r\n";
 	sendNames(*ch, client);
 }
 
 void Server::joinChannel(Client* client, std::string& args) {
 	std::vector<std::string> targets;
+	std::string key = "";
 	size_t commaPos = args.find(","); //Ira: client send a list of channels he wants to join separated by commas
+	size_t spacePos = args.find(" ");
+	if (spacePos != std::string::npos) {
+		key = args.substr(spacePos + 1);
+		args.erase(spacePos);
+	}
 	if (commaPos != std::string::npos) {
 		targets = split(args, ',');
 	}
 	else
 		targets.push_back(args);
 	for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
-		connectToChannel(client, *it);
+		connectToChannel(client, *it, key);
 	}
 }
 
@@ -149,7 +168,7 @@ void Server::kickOutOfChannel(Client &sender, std::string args) {
 				reason = args.substr(colonPos);
 			else
 				colonPos = args.length();
-			std::string targetsStr = args.substr(spasePos + 1, colonPos - (spasePos + 2));
+			std::string targetsStr = args.substr(spasePos + 1, colonPos - (spasePos + 1));
 			std::cout << "Target string " << targetsStr << std::endl;
 			targets = split(targetsStr, ',');
 			for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {

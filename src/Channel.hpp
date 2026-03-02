@@ -13,11 +13,12 @@ private:
 	std::string _topic;
 	std::string _modes;
 	std::string _key;
+	std::string _limit_string;
 	bool _invite_only;
 	bool _topic_restrictions;
 	bool _key_settings;
 	bool _has_limit;
-	int _user_limit;
+	int _limit_numeric;
 
 	// OCF - Private to prevent copying
 public:
@@ -34,12 +35,14 @@ public:
 	std::string getTopic();
 	std::string getChName();
 	std::string getModestring();
+	std::string getKey();
+	std::string getLimitString();
+	int getLimitNumeric();
 	Client* getClientFromChan(int FD);
 	bool getKeySetting();
 	bool getTopicRestr();
 	bool getInviteSettings();
-	int getUserLimit();
-
+	bool isFull();
 
 	//SETTERS
 	void setTopic(std::string topic);
@@ -47,6 +50,8 @@ public:
 	void addMember(Client *newMember);
 	void addOperator(Client *newOper);
 	void addInvited(int FD_inv);
+	bool userInvited(int FD);
+	void removeFromInvited(int FD);
 
 	bool clientIsOperator(Client *client);
 	bool clientIsMember(Client *client);

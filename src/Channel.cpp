@@ -1,20 +1,20 @@
 #include "Channel.hpp"
 
-Channel::Channel() : _members(), _operators(), _invited_FD(), _name(""), _topic(""), _modes(""), _key("") {
+Channel::Channel() : _members(), _operators(), _invited_FD(), _name(""), _topic(""), _modes(""), _key(""), _limit_string("") {
 	_invite_only = false;
 	_topic_restrictions = false;
 	_key_settings = false;
-	_user_limit =  -1;
+	_limit_numeric =  -1;
 }
 
-Channel::Channel(Client *client, std::string name) : _invited_FD(), _name(name), _topic(""), _modes(""), _key("") {
+Channel::Channel(Client *client, std::string name) : _invited_FD(), _name(name), _topic(""), _modes(""), _key(""), _limit_string("") {
 	addMember(client);
 	addOperator(client);
 	_invite_only = false;
 	_topic_restrictions = false;
 	_key_settings = false;
 	_has_limit = false;
-	_user_limit =  -1;
+	_limit_numeric =  -1;
 }
 
 Channel::Channel(const Channel &other) {
@@ -29,7 +29,8 @@ Channel::Channel(const Channel &other) {
 	_topic_restrictions = other._topic_restrictions;
 	_key_settings = other._key_settings;
 	_has_limit = other._has_limit;
-	_user_limit =  other._user_limit;
+	_limit_numeric =  other._limit_numeric;
+	_limit_string = other._limit_string;
 }
 
 Channel& Channel::operator=(const Channel &other) {
@@ -44,7 +45,8 @@ Channel& Channel::operator=(const Channel &other) {
 		_invite_only = other._invite_only;
 		_topic_restrictions = other._topic_restrictions;
 		_key_settings = other._key_settings;
-		_user_limit =  other._user_limit;
+		_limit_numeric =  other._limit_numeric;
+		_limit_string = other._limit_string;
 	}
 	return (*this);
 }
@@ -124,20 +126,34 @@ std::string Channel::getModestring() {
 	return (this->_modes);
 }
 
+std::string Channel::getKey() {
+	return (this->_key);
+}
+
+std::string Channel::getLimitString() {
+	return (this->_limit_string);
+}
+
+int  Channel::getLimitNumeric() {
+	return (this->_limit_numeric);
+}
+
 bool Channel::getKeySetting() {
-	return(this->_key_settings);
+	return (this->_key_settings);
 }
 
 bool  Channel::getTopicRestr() {
-	return(this->_topic_restrictions);
+	return (this->_topic_restrictions);
 }
 
 bool  Channel::getInviteSettings() {
-	return(this->_invite_only);
+	return (this->_invite_only);
 }
 
-int  Channel::getUserLimit() {
-	return(this->_user_limit);
+bool Channel::isFull() {
+	if ((int)_members.size() == _limit_numeric)
+		return (true);
+	return (false);
 }
 
 void Channel::deleteClient(int FD) {
@@ -150,6 +166,12 @@ void Channel::deleteClient(int FD) {
 	for (std::vector<Client*>::iterator itOp = _operators.begin(); itOp != _operators.end(); itOp++) {
 		if ((*itOp)->getFd() == FD) {
 			_operators.erase(itOp);
+			break ;
+		}
+	}
+	for (std::vector<int>::iterator itInv = _invited_FD.begin(); itInv != _invited_FD.end(); itInv++) {
+		if (*itInv == FD) {
+			_invited_FD.erase(itInv);
 			break ;
 		}
 	}
@@ -177,30 +199,31 @@ int Channel::addMode(char mode, std::vector<std::string>& modeARGs) {
 			this->_invite_only = true;
 			return (0);
 		case ('k'):
-			this->_modes += mode;
-			this->_key_settings = true;
-			if (!modeARGs.empty()) {
-				this->_key = modeARGs[0];
-				modeARGs.erase(modeARGs.begin());
-			}
-			else
+			if (modeARGs.empty()) //Ira: if no argument from user
 				return (461);
+			if (_modes.find(mode) == std::string::npos) //Ira: if we have this mode for channel we don't need to add it to the string, we just need to change the arg
+				this->_modes += mode;
+			this->_key_settings = true;
+			this->_key = modeARGs[0];
+			modeARGs.erase(modeARGs.begin());
 			return (0);
 		case ('t'):
 			this->_modes += mode;
 			this->_topic_restrictions = true;
 			return (0);
-		case ('l'):
-			this->_modes += mode;
-			this->_has_limit = true;
-			if (!modeARGs.empty()) {
-				std::stringstream ss(modeARGs[0]);
-				ss >> this->_user_limit;
-				modeARGs.erase(modeARGs.begin());
-			}
-			else
+		case ('l'): {
+			if (modeARGs.empty()) //Ira: if no argument from user
 				return (461);
+			std::stringstream ss(modeARGs[0]);
+			if (!(ss >> this->_limit_numeric) || _limit_numeric < 0) 
+				return (461); //Ira: IRC does't have any other error if args is incorrect
+			_limit_string = modeARGs[0]; //Ira: if we have proper arg for int then we can wright down to string
+			if (_modes.find(mode) == std::string::npos) //Ira: if we have this mode for channel we don't need to add it to the string, we just need to change the arg
+				this->_modes += mode;
+			this->_has_limit = true;
+			modeARGs.erase(modeARGs.begin());
 			return(0);
+		}
 		default:
 			return (472);
 	}
@@ -209,8 +232,42 @@ int Channel::addMode(char mode, std::vector<std::string>& modeARGs) {
 bool Channel::delMode(char mode) {
 	size_t pos = this->_modes.find(mode);
 	if (pos != std::string::npos) {
-		_modes.erase(pos);
+		_modes.erase(pos, 1);
+		if (mode == 'l') {
+			_limit_numeric = -1;
+			_limit_string = "";
+			_has_limit = false;
+		}
+		else if (mode == 'k') {
+			_key = "";
+			_key_settings = false;
+		}
+		else if (mode == 'i') {
+			_invite_only = false;
+			_invited_FD.clear();
+		}
+		else if (mode == 't') {
+			_topic_restrictions = false;
+			_topic.clear();
+		}
 		return (true);
 	}
 	return (false);
+}
+
+bool Channel::userInvited(int FD) {
+	for (std::vector<int>::iterator it = _invited_FD.begin(); it != _invited_FD.end(); it++) {
+		if (*it == FD)
+			return (true);
+	}
+	return (false);
+}
+
+void Channel::removeFromInvited(int FD) {
+	for (std::vector<int>::iterator it = _invited_FD.begin(); it != _invited_FD.end(); it++) {
+		if (*it == FD) {
+			_invited_FD.erase(it);
+			break;
+		}
+	}
 }

@@ -64,7 +64,7 @@ public:
 
   //Ira: channel operations
   void joinChannel(Client* client, std::string& args);
-  void connectToChannel(Client* client, std::string& channelName);
+  void connectToChannel(Client* client, std::string& channelName, std::string key);
   void kickOutOfChannel(Client& client, std::string args);
   void inviteToChan(Client& sender, std::string args);
   void operateMode(Client& sender, std::string);

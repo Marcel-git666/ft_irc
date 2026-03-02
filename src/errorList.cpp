@@ -22,8 +22,14 @@ std::string Server::GetErrorStr(std::string args, int errorNumber, const Client&
 		return(":server 461 " + args + " :Not enough parameters\r\n");
 	case (462):
 		return(":server 462 * :You may not reregister\r\n");
+	case (471):
+		return(":server 471 " + client.getNickname() + " " + args + " :Cannot join channel (+l):\r\n");
 	case (472):
 		return(":server 472 " + args + " :is unknown mode char to me\r\n");
+	case (473):
+		return(":server 473 " + client.getNickname() + " " + args + " :Cannot join channel (+i)\r\n");
+	case (475):
+		return(":server 475 " + client.getNickname() + " " + args + " :Cannot join channel (+k)\r\n");
 	case (482):
 		return(":server 482 " + client.getNickname() + " " + args + " :You're not channel operator\r\n");
 	}

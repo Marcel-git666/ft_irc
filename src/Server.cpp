@@ -128,8 +128,8 @@ void Server::run() {
 
             std::cout << "Buffer for FD " << _fds[i].fd << ": "
                       << _clients[_fds[i].fd]->getBuffer() << std::endl;
+					  while (_clients[_fds[i].fd] && _clients[_fds[i].fd]->getBuffer() != "") {
 			//Ira: extracting and executing commands
-			while (_clients[_fds[i].fd] && _clients[_fds[i].fd]->getBuffer() != "") {
 				std::string args = _clients[_fds[i].fd]->extractMessage();
 				std::string cmd = extractCMD(args); 
 				if (!executeCMD(cmd, args, *_clients[_fds[i].fd])) {
