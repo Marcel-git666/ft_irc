@@ -116,6 +116,10 @@ void Server::inviteToChan(Client& sender, std::string args) {
 		sendError(chanName, 403, sender);
 		return ;
 	}
+	if (ch->getInviteSettings() && !ch->clientIsOperator(&sender)) {
+		sendError(chanName, 482, sender);
+		return ;
+	}
 	if (hashtagPos != std::string::npos) {
 		std::string targetsStr = args.substr(0, hashtagPos - 1); //Ira: need to cut space and hashtag
 		targets = split(targetsStr, ',');

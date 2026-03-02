@@ -28,6 +28,7 @@ void Server::applyMode(Client& sender, Channel* chan, std::string modestring) {
 		if (modestring[0] == '+') {
 			if (modestring.find("k") != std::string::npos && modestring.find("l") != std::string::npos && modeARGs.size() < 2) {
 				sendError("MODE", 461, sender);
+				return ;
 			}
 			for (size_t i = 1; i < modestring.length(); i++) {
 				if (chan->getModestring().find(modestring[i]) == std::string::npos || modestring[i] == 'l' || modestring[i] == 'k') {
