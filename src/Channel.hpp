@@ -64,6 +64,8 @@ public:
 	//MODES
 	int addMode(char mode, std::vector<std::string>& modeARGs);
 	bool delMode(char mode);
+
+	Client* findFromMember(std::string nickName);
 };
 
 std::ostream& operator<<(std::ostream& out, const Channel& channel);

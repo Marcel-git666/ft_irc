@@ -83,8 +83,13 @@ void Server::operateMode(Client& sender, std::string args) {
 			it = targets.erase(it); // Ira: erase returns next valid iterator
 		}
 		else {
-			if (modestring != "")
+			if (modestring != "") {
 				applyMode(sender, ch, modestring);
+				std::vector<Client*> members = ch->getMembers();
+				for (size_t i = 0; i < members.size(); i++) {
+						sendNames(*ch, members[i]);
+				}
+			}
 			else
 				sendChanMode(sender, ch);
 			++it;

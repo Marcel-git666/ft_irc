@@ -224,6 +224,13 @@ int Channel::addMode(char mode, std::vector<std::string>& modeARGs) {
 			modeARGs.erase(modeARGs.begin());
 			return(0);
 		}
+		case ('o'): {
+			if (modeARGs.empty())
+				return (461);
+			addOperator(findFromMember(modeARGs[0]));
+			modeARGs.erase(modeARGs.begin());
+			return (0);
+		}
 		default:
 			return (472);
 	}
@@ -274,4 +281,12 @@ void Channel::removeFromInvited(int FD) {
 
 void Channel::setTopic(std::string topic) {
 	this->_topic = topic;
+}
+
+Client* Channel::findFromMember(std::string nickName) { //Ira: I need it to solve +o, because I did a vector of *Client
+	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
+		if ((*it)->getNickname() == nickName)
+			return (*it);
+	}
+	return (NULL);
 }

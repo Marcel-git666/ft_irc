@@ -70,7 +70,6 @@ void Server::sendToChannel(Client &sender, std::string args) {
 		sendError(args, 403, sender);
 	else {
 		if (ch->clientIsMember(&sender)) {
-			std::cout << BLUE << &sender << " is a client who send message after being kecked out" << ENDCOLOR << std::endl;
 			std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost PRIVMSG " + args + "\r\n";
 			std::vector<Client*> members = ch->getMembers();
 			for (size_t i = 0; i < members.size(); i++) {
@@ -83,9 +82,9 @@ void Server::sendToChannel(Client &sender, std::string args) {
 	}
 }
 
-void Server::broadcastChannel(Channel* ch, std::string command, std::string topic, Client& sender) {
+void Server::broadcastChannel(Channel* ch, std::string command, std::string comment, Client& sender) {
 	if (ch->clientIsMember(&sender)) {
-			std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost " + command + " " + ch->getChName() + " :" + topic + "\r\n";
+			std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost " + command + " " + ch->getChName() + " :" + comment + "\r\n";
 			std::vector<Client*> members = ch->getMembers();
 			for (size_t i = 0; i < members.size(); i++) {
 					sendMsgToClient(msg, *members[i]);
