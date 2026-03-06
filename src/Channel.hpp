@@ -49,6 +49,7 @@ public:
 
 	void addMember(Client *newMember);
 	void addOperator(Client *newOper);
+	int deleteOperator(Client *Oper);
 	void addInvited(int FD_inv);
 	bool userInvited(int FD);
 	void removeFromInvited(int FD);
@@ -63,7 +64,7 @@ public:
 
 	//MODES
 	int addMode(char mode, std::vector<std::string>& modeARGs);
-	bool delMode(char mode);
+	int delMode(char mode, std::vector<std::string>& modeARGs);
 
 	Client* findFromMember(std::string nickName);
 };

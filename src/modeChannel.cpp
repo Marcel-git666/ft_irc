@@ -19,28 +19,30 @@ void Server::sendChanMode(Client& sender, Channel* chan) {
 void Server::applyMode(Client& sender, Channel* chan, std::string modestring) {
 	if (chan->clientIsOperator(&sender)) {
 		size_t spasePos = modestring.find(" ");
+		std::string modes;
 		std::vector<std::string> modeARGs;
 		int modeRes;
 		if (spasePos != std::string::npos) {
 			modeARGs = split(modestring.substr(spasePos + 1), ' ');
-			modestring = modestring.substr(0, spasePos);
+			modes = modestring.substr(0, spasePos);
+			std::cout << BLUE << "modestring :" << modestring << ENDCOLOR << std::endl;
 		}
-		if (modestring[0] == '+') {
-			if (modestring.find("k") != std::string::npos && modestring.find("l") != std::string::npos && modeARGs.size() < 2) {
+		if (modes[0] == '+') {
+			if (modes.find("k") != std::string::npos && modes.find("l") != std::string::npos && modeARGs.size() < 2) {
 				sendError("MODE", 461, sender);
 				return ;
 			}
-			for (size_t i = 1; i < modestring.length(); i++) {
-				if (chan->getModestring().find(modestring[i]) == std::string::npos || modestring[i] == 'l' || modestring[i] == 'k') {
+			for (size_t i = 1; i < modes.length(); i++) {
+				if (chan->getModestring().find(modes[i]) == std::string::npos || modes[i] == 'l' || modes[i] == 'k') {
 				//Ira: chaeck if mode isn't in a string, for k and l its possible, if client want to change args
-					modeRes = chan->addMode(modestring[i], modeARGs);
+					modeRes = chan->addMode(modes[i], modeARGs);
 					switch (modeRes)
 					{
 						case (461):
 							sendError("MODE", 461, sender);
 							return ;
 						case (472):
-							std::string char_to_str(1, modestring[i]);
+							std::string char_to_str(1, modes[i]);
 							sendError(char_to_str, 472, sender);
 							return ;
 					}
@@ -48,10 +50,27 @@ void Server::applyMode(Client& sender, Channel* chan, std::string modestring) {
 			}
 		}
 		else if (modestring[0] == '-') {
-			for (size_t i = 1; i < modestring.length(); i++) {
-				chan->delMode(modestring[i]);
+			for (size_t i = 1; i < modes.length(); i++) {
+				modeRes= chan->delMode(modes[i], modeARGs);
+				switch (modeRes) {
+					case (441):
+						sendError(modeARGs[0] + " " + chan->getChName(), 441, sender);
+						return ;
+					case (461):
+						sendError("MODE", 461, sender);
+						return ;
+					case (472):
+						std::string char_to_str(1, modes[i]);
+						sendError(char_to_str, 472, sender);
+						return ;
+				}
+				if (clientFdsearch(modeARGs[0]) == -1) {
+					sendError(modeARGs[0], 401, sender);
+					return ;
+				}
 			}
 		}
+		broadcastChannel(chan, "MODE", modestring, sender);
 	}
 	else {
 		if (chan->clientIsMember(&sender))
@@ -85,10 +104,7 @@ void Server::operateMode(Client& sender, std::string args) {
 		else {
 			if (modestring != "") {
 				applyMode(sender, ch, modestring);
-				std::vector<Client*> members = ch->getMembers();
-				for (size_t i = 0; i < members.size(); i++) {
-						sendNames(*ch, members[i]);
-				}
+
 			}
 			else
 				sendChanMode(sender, ch);

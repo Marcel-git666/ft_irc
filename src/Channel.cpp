@@ -61,6 +61,19 @@ void Channel::addOperator(Client *newOper) {
 	_operators.push_back(newOper);
 }
 
+int Channel::deleteOperator(Client *Oper) {
+	std::vector<Client*>::iterator itOp;
+	for (itOp = _operators.begin(); itOp != _operators.end(); itOp++) {
+		if ((*itOp)->getFd() == Oper->getFd()) {
+			_operators.erase(itOp);
+			break ;
+		}
+	}
+	if (itOp == _operators.end())
+		return (-1);
+	return (0);
+}
+
 void Channel::addInvited(int FD_inv) {
 	_invited_FD.push_back(FD_inv);
 }
@@ -236,30 +249,47 @@ int Channel::addMode(char mode, std::vector<std::string>& modeARGs) {
 	}
 }
 
-bool Channel::delMode(char mode) {
+int Channel::delMode(char mode, std::vector<std::string>& modeARGs) {
 	size_t pos = this->_modes.find(mode);
 	if (pos != std::string::npos) {
 		_modes.erase(pos, 1);
-		if (mode == 'l') {
+		switch (mode) {
+		case ('l'): {
 			_limit_numeric = -1;
 			_limit_string = "";
 			_has_limit = false;
+			return (0);
 		}
-		else if (mode == 'k') {
+		case ('k'): {
 			_key = "";
 			_key_settings = false;
+			return (0);
 		}
-		else if (mode == 'i') {
+		case ('i'): {
 			_invite_only = false;
 			_invited_FD.clear();
+			return (0);
 		}
-		else if (mode == 't') {
+		case ('t'): {
 			_topic_restricted = false;
 			_topic.clear();
+			return (0);
 		}
-		return (true);
+		default:
+			return (472);
+		}
 	}
-	return (false);
+	if (mode == 'o') {
+		if (modeARGs.empty())
+			return (461);
+		Client *delOper;
+		delOper = findFromMember(modeARGs[0]);
+		if (delOper == NULL)
+			return(441);
+		if (deleteOperator(delOper) != -1) //Ira: if user isn't an operator (reurning (-1)), just ignore the command
+			modeARGs.erase(modeARGs.begin());
+	}
+	return (0);
 }
 
 bool Channel::userInvited(int FD) {

@@ -84,11 +84,12 @@ void Server::sendToChannel(Client &sender, std::string args) {
 
 void Server::broadcastChannel(Channel* ch, std::string command, std::string comment, Client& sender) {
 	if (ch->clientIsMember(&sender)) {
-			std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost " + command + " " + ch->getChName() + " :" + comment + "\r\n";
+			std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost " + command + " " + ch->getChName() + " " + comment + "\r\n";
 			std::vector<Client*> members = ch->getMembers();
 			for (size_t i = 0; i < members.size(); i++) {
 					sendMsgToClient(msg, *members[i]);
 			}
+			std::cout << BLUE << "msg :" << msg << " was broadcasted" << ENDCOLOR << std::endl;
 		}
 		else
 			sendError(ch->getChName(), 442, sender);
@@ -234,6 +235,6 @@ void Server::setTopic(Client& sender, std::string& args) {
 			return ;
 		}
 		ch->setTopic(topic);
-		broadcastChannel(ch, "TOPIC", topic, sender);
+		broadcastChannel(ch, "TOPIC", " :" + topic, sender);
 	}
 }
