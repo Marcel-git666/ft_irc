@@ -82,8 +82,8 @@ void Server::init() {
 
   _fds.push_back(pfd); // Add it to your vector
 }
-
 void Server::run() {
+
   std::cout << "Server is RUNNING..." << std::endl;
   while (isRunning) {
     // 1. Wait for events

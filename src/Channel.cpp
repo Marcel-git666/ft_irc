@@ -1,15 +1,15 @@
 #include "Channel.hpp"
 
-Channel::Channel() : _members(), _operators(), _invited_FD(), _name(""), _topic(""), _modes(""), _key(""), _limit_string("") {
+Channel::Channel() : _members(), _operatorsFDs(), _invited_FD(), _name(""), _topic(""), _modes(""), _key(""), _limit_string("") {
 	_invite_only = false;
 	_topic_restricted = false;
 	_key_settings = false;
 	_limit_numeric =  -1;
 }
-
 Channel::Channel(Client *client, std::string name) : _invited_FD(), _name(name), _topic(""), _modes(""), _key(""), _limit_string("") {
-	addMember(client);
-	addOperator(client);
+
+	addMember(client->getFd(), client->getNickname());
+	addOperator(client->getFd());
 	_invite_only = false;
 	_topic_restricted = false;
 	_key_settings = false;
@@ -19,7 +19,7 @@ Channel::Channel(Client *client, std::string name) : _invited_FD(), _name(name),
 
 Channel::Channel(const Channel &other) {
 	_members = other._members;
-	_operators = other._operators;
+	_operatorsFDs = other._operatorsFDs;
 	_invited_FD = other._invited_FD;
 	_name = other._name;
 	_topic = other._topic;
@@ -36,7 +36,7 @@ Channel::Channel(const Channel &other) {
 Channel& Channel::operator=(const Channel &other) {
 	if (this != &other) {
 		_members = other._members;
-		_operators = other._operators;
+		_operatorsFDs = other._operatorsFDs;
 		_invited_FD = other._invited_FD;
 		_name = other._name;
 		_topic = other._topic;
@@ -53,23 +53,23 @@ Channel& Channel::operator=(const Channel &other) {
 
 Channel::~Channel() {}
 
-void Channel::addMember(Client *newMember) {
-	_members.push_back(newMember);
+void Channel::addMember(int clientID, std::string clientNickname) {
+	_members[clientID] = clientNickname;
 }
 
-void Channel::addOperator(Client *newOper) {
-	_operators.push_back(newOper);
+void Channel::addOperator(int clientID) {
+	_operatorsFDs.push_back(clientID);
 }
 
-int Channel::deleteOperator(Client *Oper) {
-	std::vector<Client*>::iterator itOp;
-	for (itOp = _operators.begin(); itOp != _operators.end(); itOp++) {
-		if ((*itOp)->getFd() == Oper->getFd()) {
-			_operators.erase(itOp);
+int Channel::deleteOperator(int clientFD) {
+	std::vector<int>::iterator itOp;
+	for (itOp = _operatorsFDs.begin(); itOp != _operatorsFDs.end(); itOp++) {
+		if (*itOp == clientFD) {
+			_operatorsFDs.erase(itOp);
 			break ;
 		}
 	}
-	if (itOp == _operators.end())
+	if (itOp == _operatorsFDs.end())
 		return (-1);
 	return (0);
 }
@@ -78,53 +78,28 @@ void Channel::addInvited(int FD_inv) {
 	_invited_FD.push_back(FD_inv);
 }
 
-bool Channel::clientIsOperator(Client *client) {
-	for (std::vector<Client*>::iterator it = _operators.begin(); it != _operators.end(); it++) {
-		if (*it == client)
+bool Channel::clientIsOperator(int clientFD) {
+	for (std::vector<int>::iterator it = _operatorsFDs.begin(); it != _operatorsFDs.end(); it++) {
+		if (*it == clientFD)
 			return (true);
 	}
 	return (false);
 }
 
-bool Channel::clientIsMember(Client *client) {
-	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
-		if (*it == client)
+bool Channel::clientIsMember(int clientFD) {
+	for (std::map<int, std::string>::iterator it = _members.begin(); it != _members.end(); it++) {
+		if (it->first == clientFD)
 			return (true);
 	}
 	return (false);
 }
 
-bool Channel::clientIsMember(int FD) {
-	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
-		if ((*it)->getFd() == FD)
-			return (true);
-	}
-	return (false);
-}
-
-bool Channel::clientIsMember(std::string clientNickname) {
-	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
-		if ((*it)->getNickname() == clientNickname)
-			return (true);
-	}
-	return (false);
-}
-
-
-std::vector<Client *> Channel::getMembers() {
+std::map<int, std::string> Channel::getMembers() {
 	return (_members);
 }
 
-std::vector<Client *> Channel::getOperators() {
-	return (_operators);
-}
-
-Client* Channel::getClientFromChan(int FD) {
-	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
-		if ((*it)->getFd() == FD)
-			return (*it);
-	}
-	return (NULL);
+std::vector<int> Channel::getOperators() {
+	return (_operatorsFDs);
 }
 
 std::string Channel::getTopic() {
@@ -170,36 +145,21 @@ bool Channel::isFull() {
 }
 
 void Channel::deleteClient(int FD) {
-	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
-		if ((*it)->getFd() == FD) {
-			_members.erase(it);
+	for (std::map<int, std::string>::iterator it = _members.begin(); it != _members.end(); it++) {
+		if (it->first == FD) {
+			_members.erase(FD);
 			break ;
 		}
 	}
-	for (std::vector<Client*>::iterator itOp = _operators.begin(); itOp != _operators.end(); itOp++) {
-		if ((*itOp)->getFd() == FD) {
-			_operators.erase(itOp);
+	for (std::vector<int>::iterator itOp = _operatorsFDs.begin(); itOp != _operatorsFDs.end(); itOp++) {
+		if (*itOp == FD) {
+			_operatorsFDs.erase(itOp);
 			break ;
 		}
 	}
 	for (std::vector<int>::iterator itInv = _invited_FD.begin(); itInv != _invited_FD.end(); itInv++) {
 		if (*itInv == FD) {
 			_invited_FD.erase(itInv);
-			break ;
-		}
-	}
-}
-
-void Channel::deleteClient(std::string clientNickname) {
-	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
-		if ((*it)->getNickname() == clientNickname) {
-			_members.erase(it);
-			break ;
-		}
-	}
-	for (std::vector<Client*>::iterator itOp = _operators.begin(); itOp != _operators.end(); itOp++) {
-		if ((*itOp)->getNickname() == clientNickname) {
-			_operators.erase(itOp);
 			break ;
 		}
 	}
@@ -282,11 +242,11 @@ int Channel::delMode(char mode, std::vector<std::string>& modeARGs) {
 	if (mode == 'o') {
 		if (modeARGs.empty())
 			return (461);
-		Client *delOper;
+		int delOper;
 		delOper = findFromMember(modeARGs[0]);
-		if (delOper == NULL)
+		if (delOper == 0)
 			return(441);
-		if (deleteOperator(delOper) != -1) //Ira: if user isn't an operator (reurning (-1)), just ignore the command
+		if (deleteOperator(delOper) != -1) //Ira: if user isn't an operator (returning (-1)), just ignore the command
 			modeARGs.erase(modeARGs.begin());
 	}
 	return (0);
@@ -313,10 +273,10 @@ void Channel::setTopic(std::string topic) {
 	this->_topic = topic;
 }
 
-Client* Channel::findFromMember(std::string nickName) { //Ira: I need it to solve +o, because I did a vector of *Client
-	for (std::vector<Client*>::iterator it = _members.begin(); it != _members.end(); it++) {
-		if ((*it)->getNickname() == nickName)
-			return (*it);
+int Channel::findFromMember(std::string nickName) { //Ira: I need it to solve +o, because I did a vector of *Client
+	for (std::map<int, std::string>::iterator it = _members.begin(); it != _members.end(); it++) {
+		if (it->second == nickName)
+			return (it->first);
 	}
-	return (NULL);
+	return (0);
 }

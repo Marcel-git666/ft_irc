@@ -2,12 +2,13 @@
 
 #include "Client.hpp"
 #include <vector>
+#include <map>
 #include <sstream>
 
 class Channel {
 private:
-	std::vector<Client *> _members;
-	std::vector<Client *> _operators;
+	std::map<int, std::string> _members;
+	std::vector<int> _operatorsFDs;
 	std::vector<int> _invited_FD;
 	std::string _name;
 	std::string _topic;
@@ -30,15 +31,14 @@ public:
 	~Channel();
 
 	//GETTERS
-	std::vector<Client *> getMembers();
-	std::vector<Client *> getOperators();
+	std::map<int, std::string> getMembers();
+	std::vector<int> getOperators();
 	std::string getTopic();
 	std::string getChName();
 	std::string getModestring();
 	std::string getKey();
 	std::string getLimitString();
 	int getLimitNumeric();
-	Client* getClientFromChan(int FD);
 	bool getKeySetting();
 	bool getTopicRestr();
 	bool getInviteSettings();
@@ -47,16 +47,15 @@ public:
 	//SETTERS
 	void setTopic(std::string topic);
 
-	void addMember(Client *newMember);
-	void addOperator(Client *newOper);
-	int deleteOperator(Client *Oper);
+	void addMember(int clientID, std::string clientNickname);
+	void addOperator(int clientID);
+	int deleteOperator(int clientFD);
 	void addInvited(int FD_inv);
 	bool userInvited(int FD);
 	void removeFromInvited(int FD);
 
-	bool clientIsOperator(Client *client);
-	bool clientIsMember(Client *client);
-	bool clientIsMember(int FD);
+	bool clientIsOperator(int clientFD);
+	bool clientIsMember(int clientFD);
 	bool clientIsMember(std::string clientNickname);
 
 	void deleteClient(std::string clientNickname);
@@ -66,7 +65,7 @@ public:
 	int addMode(char mode, std::vector<std::string>& modeARGs);
 	int delMode(char mode, std::vector<std::string>& modeARGs);
 
-	Client* findFromMember(std::string nickName);
+	int findFromMember(std::string nickName);
 };
 
 std::ostream& operator<<(std::ostream& out, const Channel& channel);

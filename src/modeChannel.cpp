@@ -17,7 +17,7 @@ void Server::sendChanMode(Client& sender, Channel* chan) {
 }
 
 void Server::applyMode(Client& sender, Channel* chan, std::string modestring) {
-	if (chan->clientIsOperator(&sender)) {
+	if (chan->clientIsOperator(sender.getFd())) {
 		size_t spasePos = modestring.find(" ");
 		std::string modes;
 		std::vector<std::string> modeARGs;
@@ -27,6 +27,8 @@ void Server::applyMode(Client& sender, Channel* chan, std::string modestring) {
 			modes = modestring.substr(0, spasePos);
 			std::cout << BLUE << "modestring :" << modestring << ENDCOLOR << std::endl;
 		}
+		else
+			modes = modestring;
 		if (modes[0] == '+') {
 			if (modes.find("k") != std::string::npos && modes.find("l") != std::string::npos && modeARGs.size() < 2) {
 				sendError("MODE", 461, sender);
@@ -64,7 +66,7 @@ void Server::applyMode(Client& sender, Channel* chan, std::string modestring) {
 						sendError(char_to_str, 472, sender);
 						return ;
 				}
-				if (clientFdsearch(modeARGs[0]) == -1) {
+				if (!modeARGs.empty() && clientFdsearch(modeARGs[0]) == -1) {
 					sendError(modeARGs[0], 401, sender);
 					return ;
 				}
@@ -73,7 +75,7 @@ void Server::applyMode(Client& sender, Channel* chan, std::string modestring) {
 		broadcastChannel(chan, "MODE", modestring, sender);
 	}
 	else {
-		if (chan->clientIsMember(&sender))
+		if (chan->clientIsMember(sender.getFd()))
 			sendError(chan->getChName(), 482, sender);
 		else
 			sendError(chan->getChName(), 442, sender);

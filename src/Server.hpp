@@ -57,6 +57,7 @@ public:
   //Ira: utils
   std::string checkNickname(std::string arg); //for nickname uniqness
   int clientFdsearch(std::string nickName); //get FD from nickname
+  Client* findClient(int clientFD);
 
   bool registerClient(Client& client);
   void sendPrivateMsg(const Client& client, std::string args);

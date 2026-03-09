@@ -190,9 +190,19 @@ bool Server::registerClient(Client& client) {
 }
 
 int Server::clientFdsearch(std::string nickName) {
-	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-		if (it->second->getNickname() == nickName)
-			return it->first;   // return the fd (the key)
+	if (nickName != "") {
+		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+			if ((it->second)->getNickname() == nickName)
+				return it->first;  // return the fd (the key)
+		}
 	}
 	return (-1);
+}
+
+Client* Server::findClient(int clientFD) {
+	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); it++) {
+		if (it->first == clientFD)
+			return (it->second);
+	}
+	return (NULL);
 }

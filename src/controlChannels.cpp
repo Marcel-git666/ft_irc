@@ -20,19 +20,20 @@ void Server::connectToChannel(Client* client, std::string& name, std::string key
 			sendError(ch->getChName(), 471, *client);
 			return ;
 		}
-		ch->addMember(client);
+		ch->addMember(client->getFd(), client->getNickname());
 		if (ch->getInviteSettings())
 			ch->removeFromInvited(client->getFd());
 	}
 	std::string msg = ":" + client->getNickname() + "!" + client->getUsername() + "@localhost JOIN " + name + "\r\n";
-	std::vector<Client*> members = ch->getMembers();
-	for (size_t i = 0; i < members.size(); i++) //Ira: we need to send info about member joined to all of the channel members
-		sendMsgToClient(msg, *members[i]);
+	std::map<int, std::string> members = ch->getMembers();
+	for (std::map<int, std::string>::iterator it = members.begin(); it != members.end(); it++) //Ira: we need to send info about member joined to all of the channel members
+		sendMsgToClient(msg, *(findClient(it->first)));
 	std::string topic = ch->getTopic();
 	if (topic != "")
 		msg = ":server 332 " + client->getNickname() + " " + name + " :" + topic + "\r\n";
 	else
 		msg = ":server 331 " + client->getNickname() + " " + name + " :No topic is set\r\n";
+	sendMsgToClient(msg, *client);
 	sendNames(*ch, client);
 }
 
@@ -69,12 +70,12 @@ void Server::sendToChannel(Client &sender, std::string args) {
 	if (!ch)
 		sendError(args, 403, sender);
 	else {
-		if (ch->clientIsMember(&sender)) {
+		if (ch->clientIsMember(sender.getFd())) {
 			std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost PRIVMSG " + args + "\r\n";
-			std::vector<Client*> members = ch->getMembers();
-			for (size_t i = 0; i < members.size(); i++) {
-				if (&sender != members[i])
-					sendMsgToClient(msg, *members[i]);
+			std::map<int, std::string> members = ch->getMembers();
+			for (std::map<int, std::string>::iterator it = members.begin(); it != members.end(); it++)  {
+				if (sender.getFd() != it->first)
+					sendMsgToClient(msg,  *(findClient(it->first)));
 			}
 		}
 		else
@@ -83,11 +84,11 @@ void Server::sendToChannel(Client &sender, std::string args) {
 }
 
 void Server::broadcastChannel(Channel* ch, std::string command, std::string comment, Client& sender) {
-	if (ch->clientIsMember(&sender)) {
+	if (ch->clientIsMember(sender.getFd())) {
 			std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost " + command + " " + ch->getChName() + " " + comment + "\r\n";
-			std::vector<Client*> members = ch->getMembers();
-			for (size_t i = 0; i < members.size(); i++) {
-					sendMsgToClient(msg, *members[i]);
+			std::map<int, std::string> members = ch->getMembers();
+			for (std::map<int, std::string>::iterator it = members.begin(); it != members.end(); it++)  {
+					sendMsgToClient(msg, *(findClient(it->first)));
 			}
 			std::cout << BLUE << "msg :" << msg << " was broadcasted" << ENDCOLOR << std::endl;
 		}
@@ -96,21 +97,21 @@ void Server::broadcastChannel(Channel* ch, std::string command, std::string comm
 }
 
 void Server::sendNames(Channel& ch, Client *client) {
-	std::vector<Client*> members = ch.getMembers();
-	std::vector<Client*> operators = ch.getOperators();
+	std::map<int, std::string> members = ch.getMembers();
+	std::vector<int> operators = ch.getOperators();
 	std::string msg = ":server 353 = " + ch.getChName() + " :";
-	for (size_t i = 0; i < members.size(); i++) {
-		if (!members[i]) continue;
+	for (std::map<int, std::string>::iterator it = members.begin(); it != members.end(); it++) {
+		//if (!it) continue;
 		bool isOp = false;
 		for (size_t j = 0; j < operators.size(); j++) {
-			if (members[i] == operators[j]) {
+			if (it->first == operators[j]) {
 				isOp = true;
 				break;
 			}
 		}
 		if (isOp)
 			msg += "@";
-		msg += members[i]->getNickname();
+		msg += findClient(it->first)->getNickname();
 		msg += " ";
 	}
 	msg += "\r\n";
@@ -128,7 +129,7 @@ void Server::inviteToChan(Client& sender, std::string args) {
 		sendError(chanName, 403, sender);
 		return ;
 	}
-	if (ch->getInviteSettings() && !ch->clientIsOperator(&sender)) {
+	if (ch->getInviteSettings() && !ch->clientIsOperator(sender.getFd())) {
 		sendError(chanName, 482, sender);
 		return ;
 	}
@@ -178,7 +179,7 @@ void Server::kickOutOfChannel(Client &sender, std::string args) {
 		return ;
 	}
 	else {
-		if (ch->clientIsOperator(&sender)) {
+		if (ch->clientIsOperator(sender.getFd())) {
 			size_t colonPos = args.find(":");
 			if (colonPos != std::string::npos)
 				reason = args.substr(colonPos);
@@ -189,12 +190,15 @@ void Server::kickOutOfChannel(Client &sender, std::string args) {
 			targets = split(targetsStr, ',');
 			for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
 				std::cout << "Person to be kicked is '" << *it << "'"<< std::endl;
-				if (ch->clientIsMember(*it)) {
-					std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost KICK " + chanName + " " + *it + " " + reason + "\r\n";
-					std::vector<Client*> members(ch->getMembers());
-					for (size_t i = 0; i < members.size(); i++) //Ira: we need to send info about member kicked of the channel members
-						sendMsgToClient(msg, *members[i]);
-					ch->deleteClient(*it);
+				if (ch->clientIsMember(clientFdsearch(*it))) {
+					std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost KICK " + chanName + " " + *it;
+					if (!reason.empty())
+						msg += " " + reason;
+					msg += "\r\n";
+					std::map<int, std::string> members(ch->getMembers());
+					for (std::map<int, std::string>::iterator it = members.begin(); it != members.end(); it++) //Ira: we need to send info about member kicked of the channel members
+						sendMsgToClient(msg, *(findClient(it->first)));
+					ch->deleteClient(clientFdsearch(*it));
 				}
 				else {
 					int exist = 0;
@@ -211,7 +215,7 @@ void Server::kickOutOfChannel(Client &sender, std::string args) {
 			}
 		}
 		else {
-			if (ch->clientIsMember(&sender))
+			if (ch->clientIsMember(sender.getFd()))
 				sendError(chanName, 482, sender);
 			else
 				sendError(chanName, 442, sender);
@@ -230,7 +234,7 @@ void Server::setTopic(Client& sender, std::string& args) {
 		return ;
 	}
 	else {
-		if (ch->getTopicRestr() && !ch->clientIsOperator(&sender)) {
+		if (ch->getTopicRestr() && !ch->clientIsOperator(sender.getFd())) {
 			sendError(chanName, 482, sender);
 			return ;
 		}
