@@ -113,7 +113,10 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 				else
 					setTopic(client, args);
 			}
-			else if (cmd == "PART") {
+			else if (cmd == "PART") { 
+				//Ira: when client close the channel not "/quit" server it sends PART command,
+				// also you can do /part #channel1,#channel2,#channel3... :reason from client side, 
+				// but from inside the channel you can only do /close (reason automaticaly generated)
 				if (args[0] != '#')
 					sendError(args, 403, client);
 				else

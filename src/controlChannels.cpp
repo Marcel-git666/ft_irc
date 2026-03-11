@@ -262,7 +262,6 @@ void Server::execPART(Client& sender, std::string& args) {
 		std::cout << PINK << "Channel name from args: " << *it << ENDCOLOR << std::endl;
 		Channel* ch;
 		ch = searchChannel(*it);
-		std::cout << PINK << "Channe to leave is : " << ch->getChName() << ENDCOLOR << std::endl;
 		if (!ch)
 			sendError(*it, 403, sender);
 		else {
