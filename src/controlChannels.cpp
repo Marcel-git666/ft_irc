@@ -87,7 +87,7 @@ void Server::broadcastChannel(Channel* ch, std::string command, std::string comm
 	if (ch->clientIsMember(sender.getFd())) {
 			std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost " + command + " " + ch->getChName() + " " + comment + "\r\n";
 			std::map<int, std::string> members = ch->getMembers();
-			for (std::map<int, std::string>::iterator it = members.begin(); it != members.end(); it++)  {
+			for (std::map<int, std::string>::iterator it = members.begin(); it != members.end(); it++) {
 					sendMsgToClient(msg, *(findClient(it->first)));
 			}
 			std::cout << BLUE << "msg :" << msg << " was broadcasted" << ENDCOLOR << std::endl;
@@ -146,7 +146,7 @@ void Server::inviteToChan(Client& sender, std::string args) {
 					std::string message = ":" + sender.getNickname() + "!" +
 						sender.getUsername() + "@localhost INVITE " +
 						*it + " " + msg + "\r\n";
-					std::cout << GREEN << "Sending message from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
+					std::cout << GREEN << "Sending message " << msg << " from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
 					sendMsgToClient(message, *_clients[FD]); 
 					ch->addInvited(FD);
 				}
@@ -162,8 +162,9 @@ void Server::inviteToChan(Client& sender, std::string args) {
 	}
 }
 
-void Server::deleteClientFromChannels(int FD) {
+void Server::deleteClientFromChannels(int FD, std::string reason) {
 	for (std::map<std::string, Channel>::iterator it = _channels.begin(); it != _channels.end(); it++) {
+		broadcastChannel(&(it->second), "QUIT", reason, *(findClient(FD)));
 		it->second.deleteClient(FD);
 	}
 }
@@ -189,7 +190,6 @@ void Server::kickOutOfChannel(Client &sender, std::string args) {
 			std::cout << "Target string " << targetsStr << std::endl;
 			targets = split(targetsStr, ',');
 			for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
-				std::cout << "Person to be kicked is '" << *it << "'"<< std::endl;
 				if (ch->clientIsMember(clientFdsearch(*it))) {
 					std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost KICK " + chanName + " " + *it;
 					if (!reason.empty())
@@ -240,5 +240,34 @@ void Server::setTopic(Client& sender, std::string& args) {
 		}
 		ch->setTopic(topic);
 		broadcastChannel(ch, "TOPIC", " :" + topic, sender);
+	}
+}
+
+void Server::execPART(Client& sender, std::string& args) {
+	std::vector<std::string> targets;
+	std::string targetsStr;
+	size_t spasePos = args.find(" ");
+	std::string reason = "";
+	size_t colonPos = args.find(":");
+	if (colonPos != std::string::npos)
+		reason = args.substr(colonPos);
+	else
+		colonPos = args.length();
+	if (spasePos != std::string::npos) {
+		targetsStr = args.substr(0, spasePos);
+		std::cout << "Target string " << targetsStr << std::endl;
+		targets = split(targetsStr, ',');
+	}
+	for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
+		std::cout << PINK << "Channel name from args: " << *it << ENDCOLOR << std::endl;
+		Channel* ch;
+		ch = searchChannel(*it);
+		std::cout << PINK << "Channe to leave is : " << ch->getChName() << ENDCOLOR << std::endl;
+		if (!ch)
+			sendError(*it, 403, sender);
+		else {
+			std::cout << PINK << "Channel to leave is : " << ch->getChName() << ENDCOLOR << std::endl;
+			broadcastChannel(ch, "PART", reason, sender);
+		}
 	}
 }

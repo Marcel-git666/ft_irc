@@ -200,7 +200,11 @@ int Channel::addMode(char mode, std::vector<std::string>& modeARGs) {
 		case ('o'): {
 			if (modeARGs.empty())
 				return (461);
-			addOperator(findFromMember(modeARGs[0]));
+			int newOperFD = 0;
+			newOperFD = findFromMember(modeARGs[0]);
+			if (newOperFD == 0)
+				return(441);
+			addOperator(newOperFD);
 			modeARGs.erase(modeARGs.begin());
 			return (0);
 		}

@@ -80,7 +80,7 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 			std::cout << GREEN << "PING command was accepted and answered" << ENDCOLOR << std::endl;
 	}
 	else if (cmd == "QUIT")
-		disconnectClient(client.getFd());
+		disconnectClient(client.getFd(), args);
 	else {
 		if (client.getRegistered()) {
 			if (cmd == "PRIVMSG") {
@@ -113,6 +113,12 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 				else
 					setTopic(client, args);
 			}
+			else if (cmd == "PART") {
+				if (args[0] != '#')
+					sendError(args, 403, client);
+				else
+					execPART(client, args);
+			}
 		}
 	}
 	return (true);
@@ -126,20 +132,6 @@ std::string Server::extractCMD(std::string& args) {
 	args = args.substr(pos + 1, args.length());
 	std::cout << " ARGS for this command: " << args << "." << std::endl;
 	return command;
-}
-
-//Ira: check Nickname on Uniqueness and rules
-std::string Server::checkNickname(std::string arg) {
-	if (!_clients.empty()) {
-		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++) {
-			if (it->second->getNickname() == arg)
-				return ("433");
-		}
-	}
-	if (isdigit(arg[0]) || arg.find(':') != std::string::npos
-		|| arg.find('#') != std::string::npos || arg.find(' ') != std::string::npos)
-			return("432");
-	return ("ok");
 }
 
 void Server::sendPong(const Client& client, std::string token) {
@@ -156,37 +148,7 @@ void Server::sendError(std::string args, int errorNumber, const Client& client) 
 void Server::sendMsgToClient(std::string msg, const Client& client) {
 	send(client.getFd(), msg.c_str(), msg.size(), 0);
 	if (DEBUG)
-		std::cout << GREEN << "Message from server for client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
-}
-
-bool Server::registerClient(Client& client) {
-	if (!_password.empty() && !client.getHasPassword()) {
-		sendError(client.getNickname(), 464, client);
-		return (false);
-	}
-	if (client.setRegistered()) { //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
-	std::string msg = ":server 001 " + client.getNickname() + " :Welcome to the IRC Network, " + client.getNickname() + "\r\n";
-		sendMsgToClient(msg, client);
-		//Ira: messages below isn't obligated, but I did it to be more like the original IRC protocol
-		msg = ":server 002 :Your host is 42_ircserv, running version 01\r\n";
-		sendMsgToClient(msg, client);
-		msg = ":server 003 :This server was created " + _creationTime + "\r\n";
-		sendMsgToClient(msg, client);
-		// format: 004 <nick> <servername> <version> <usermodes> <channelmodes>
-		// usermodes = o -operators 
-		// channelmodes = i  (invite-only); t  (topic restricted); k  (key/password); o  (channel operator); l  (user limit)
-		msg = ":server 004 " + client.getNickname() + " 42_ircserv 1.0 o itkol\r\n"; 
-		sendMsgToClient(msg, client);
-		if (DEBUG) {
-			std::cout << GREEN << "Client FD " << client.getFd() << " has been registered" << ENDCOLOR << std::endl;
-			std::cout << client << std::endl;
-		}
-	}
-	else {
-		if (DEBUG) 
-			std::cout << RED << "Client FD " << client.getFd() << " couldn't be registered" << ENDCOLOR << std::endl;
-	}
-	return (true);
+		std::cout << GREEN << "Message '" << msg << "' from server for client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }
 
 int Server::clientFdsearch(std::string nickName) {

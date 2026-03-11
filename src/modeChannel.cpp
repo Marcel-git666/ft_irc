@@ -40,6 +40,9 @@ void Server::applyMode(Client& sender, Channel* chan, std::string modestring) {
 					modeRes = chan->addMode(modes[i], modeARGs);
 					switch (modeRes)
 					{
+						case (441):
+							sendError(modeARGs[0] + " " + chan->getChName(), 441, sender);
+							return ;
 						case (461):
 							sendError("MODE", 461, sender);
 							return ;

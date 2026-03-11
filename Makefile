@@ -15,6 +15,7 @@ SRC_FILES   =	main.cpp \
 				Server.cpp \
 				Client.cpp \
 				Channel.cpp \
+				registerClient.cpp \
 				cmdHandling.cpp \
 				errorList.cpp \
 				privateMsg.cpp \

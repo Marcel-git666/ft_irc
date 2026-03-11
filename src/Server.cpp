@@ -119,7 +119,7 @@ void Server::run() {
             // Client disconnected or error
             std::cout << "Client FD " << _fds[i].fd << " disconnected."
                       << std::endl;
-			disconnectClient(_fds[i].fd); //Ira: I put all stuff for client disconnection and poll fds deleting into his function
+			disconnectClient(_fds[i].fd, ""); //Ira: I put all stuff for client disconnection and poll fds deleting into his function
             i--; // Adjust index since vector shrank
           } else {
             // Data received!
@@ -134,7 +134,7 @@ void Server::run() {
 				std::string cmd = extractCMD(args); 
 				if (!executeCMD(cmd, args, *_clients[_fds[i].fd])) {
 					_clients[_fds[i].fd]->clearBuffer();
-					disconnectClient(_fds[i].fd);
+					disconnectClient(_fds[i].fd, "");
 					i--;
 					break;
 				}
@@ -179,11 +179,11 @@ void Server::acceptNewClient() {
 }
 
 //Ira: close fd, deleting fd from poll fds, delete client obj and clean the clients map
-void Server::disconnectClient(int fd) {
+void Server::disconnectClient(int fd, std::string args) {
     std::cout << "Client FD " << fd << " disconnected." << std::endl;
 
+	deleteClientFromChannels(fd, args);
     close(fd);
-	deleteClientFromChannels(fd);
     delete _clients[fd];
     _clients.erase(fd);
 

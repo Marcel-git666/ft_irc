@@ -33,7 +33,7 @@ private:
 
   void init();
   void acceptNewClient();
-  void disconnectClient(int fd); //Ira: for removing when password is wrong
+  void disconnectClient(int fd, std::string args); //Ira: for removing when password is wrong, args are needed if Client quit by himself and send a reaason why
   void sendMsgToClient(std::string msg, const Client& client); //Ira: sending message to the client
   void sendError(std::string args, int errorNumber, const Client& client); //Ira: sending error message to the client
   std::string GetErrorStr(std::string args, int errorNumber, const Client& client); //generate Error message by Error number
@@ -72,7 +72,7 @@ public:
   void applyMode(Client& sender, Channel* chan, std::string modestring);
   void sendChanMode(Client& sender, Channel* chan);
   void setTopic(Client& client, std::string& args);
-
+  void execPART(Client& sender, std::string& args);
   void broadcastChannel(Channel* ch, std::string command, std::string topic, Client& sender);
 
   //Ira: utils for channelCMD
@@ -82,7 +82,7 @@ public:
   std::vector<std::string> split(const std::string& targetsStr, char delimeter);
 
   //Ira: for cleaning when client disconnecting
-  void deleteClientFromChannels(int FD);
+  void deleteClientFromChannels(int FD, std::string reason);
 
 
 };
