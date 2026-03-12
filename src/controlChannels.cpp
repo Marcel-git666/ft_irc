@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 
 void Server::connectToChannel(Client* client, std::string& name, std::string key) {
 	Channel *ch = searchChannel(name);

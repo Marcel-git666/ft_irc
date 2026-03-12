@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 
 std::vector<std::string> Server::split(const std::string& targetsStr, char delimeter) {
 	std::vector<std::string> targets;

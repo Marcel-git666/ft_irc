@@ -1,13 +1,15 @@
 # === Variables ===
 NAME        = ircserv
+CMD_TESTER	= cmd_tester
 CXX         = c++
 CXXFLAGS    = -Wall -Wextra -Werror -std=c++98
 CPPFLAGS    = -I$(INC_DIR)
 
 # === Directories ===
-SRC_DIR     = src
-INC_DIR     = inc
-OBJ_DIR     = obj
+SRC_DIR			= src
+INC_DIR			= inc
+OBJ_DIR			= obj
+TEST_OBJ_DIR	= obj/test
 
 # === Files ===
 # Just list the filenames here!
@@ -29,6 +31,22 @@ SRCS        = $(addprefix $(SRC_DIR)/, $(SRC_FILES))
 OBJS        = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS        = $(OBJS:.o=.d)
 
+TEST_FILES = 	src/Server.cpp \
+				src/Client.cpp \
+				src/Channel.cpp \
+				src/registerClient.cpp \
+				src/cmdHandling.cpp \
+				src/errorList.cpp \
+				src/privateMsg.cpp \
+				src/controlChannels.cpp \
+				src/modeChannel.cpp \
+				unit_tests/tester_main.cpp \
+				unit_tests/test_registration.cpp \
+				unit_tests/FakeClient.cpp
+
+TEST_OBJS 	= $(patsubst %.cpp,$(TEST_OBJ_DIR)/%.o,$(TEST_FILES))
+DEPS		= $(TEST_OBJS:.o=.d)
+
 # === Rules ===
 all: $(NAME)
 
@@ -43,15 +61,34 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "Compiling $<..."
 	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -MMD -MP -c $< -o $@
 
+test: $(CMD_TESTER)
+
+$(CMD_TESTER): $(TEST_OBJS)
+	@echo "Linking tests..."
+	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) $^ -o $(CMD_TESTER)
+
+$(TEST_OBJ_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	@echo "Compiling test $<..."
+	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -MMD -MP -c $< -o $@
+
 clean:
 	@rm -rf $(OBJ_DIR)
 
+test_clean:
+	@rm -rf $(TEST_OBJ_DIR)
+
 fclean: clean
-	@rm -f $(NAME)
+	@rm -f $(NAME) $(CMD_TESTER)
+
+test_fclean : test_clean
+	@rm -f $(CMD_TESTER)
 
 re: fclean all
+
+retest: fclean test
 
 # Include dependencies (if they exist)
 -include $(DEPS)
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re test

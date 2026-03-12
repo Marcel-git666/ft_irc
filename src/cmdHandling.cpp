@@ -1,7 +1,10 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 
 //Ira: execute commands
-bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
+bool Server::executeCMD(std::string& args, Client& client) {
+	std::string cmd = extractCMD(args);
+	if (cmd.empty())
+		return (false);
 	if (cmd == "PASS") {
 		if (args != _password && !_password.empty()) {
 			if (DEBUG)
@@ -58,10 +61,12 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 				//Ira: IRCstandard: "... the username provided by the client SHOULD be prefixed 
 				// by a tilde ('~', 0x7E) to show that this value is user-set."
 			client.setUsername(username);
-			std::cout << GREEN << "Client FD " << client.getFd() << " username is " << client.getUsername() << ENDCOLOR << std::endl;
+			if (DEBUG)
+				std::cout << GREEN << "Client FD " << client.getFd() << " username is " << client.getUsername() << ENDCOLOR << std::endl;
 			std::string realname = args.substr(args.find(':') + 1);
 			client.setRealname(realname);
-			std::cout << GREEN << "Client FD " << client.getFd() << " realname is " << client.getRealname() << ENDCOLOR << std::endl;
+			if (DEBUG)
+				std::cout << GREEN << "Client FD " << client.getFd() << " realname is " << client.getRealname() << ENDCOLOR << std::endl;
 			if (!registerClient(client)) //Ira: registration if wasn't
 				return (false); // we need tu return smth for the case when client can't be registere because of password absence
 		}
@@ -130,10 +135,14 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 //Ira: extract command, and cut the message to the args
 std::string Server::extractCMD(std::string& args) {
 	size_t pos = args.find(' ');
+	if (pos == std::string::npos)
+		return("");
 	std::string command = args.substr(0, pos);
-	std::cout << "Command from client: " << command;
+	if (DEBUG)
+		std::cout << "Command from client: " << command;
 	args = args.substr(pos + 1, args.length());
-	std::cout << " ARGS for this command: " << args << "." << std::endl;
+	if (DEBUG)
+		std::cout << " ARGS for this command: " << args << "." << std::endl;
 	return command;
 }
 
@@ -142,14 +151,14 @@ void Server::sendPong(const Client& client, std::string token) {
 }
 
 void Server::sendError(std::string args, int errorNumber, const Client& client) {
-	std::string err = GetErrorStr(args, errorNumber, client);
-	send(client.getFd(), err.c_str(), err.size(), 0);
+	std::string err = GetErrorStr(args, errorNumber);
+	client.sendMessage(err);
 	if (DEBUG)
 		std::cout << PINK << "Error " << errorNumber << " for client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }
 
 void Server::sendMsgToClient(std::string msg, const Client& client) {
-	send(client.getFd(), msg.c_str(), msg.size(), 0);
+	client.sendMessage(msg);
 	if (DEBUG)
 		std::cout << GREEN << "Message '" << msg << "' from server for client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }

@@ -1,4 +1,4 @@
-#include "Channel.hpp"
+#include "../inc/Channel.hpp"
 
 Channel::Channel() : _members(), _operatorsFDs(), _invited_FD(), _name(""), _topic(""), _modes(""), _key(""), _limit_string("") {
 	_invite_only = false;

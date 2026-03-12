@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 
 //Ira: check Nickname on Uniqueness and rules
 std::string Server::checkNickname(std::string arg) {

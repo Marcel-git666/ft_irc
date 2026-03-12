@@ -1,9 +1,9 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 
-extern bool isRunning;
+//extern bool isRunning; Ira: I put it in Server class
 
 Server::Server(int port, std::string password)
-    : _port(port), _password(password) {
+    :  _is_running(true), _port(port), _password(password) {
   std::time_t now = std::time(NULL);
   _creationTime = std::ctime(&now);
   init();
@@ -83,9 +83,8 @@ void Server::init() {
   _fds.push_back(pfd); // Add it to your vector
 }
 void Server::run() {
-
   std::cout << "Server is RUNNING..." << std::endl;
-  while (isRunning) {
+  while (_is_running) {
     // 1. Wait for events
     // &fds[0]  : Pointer to the first element of your vector
     // fds.size : Number of items to watch
@@ -131,8 +130,7 @@ void Server::run() {
 					  while (_clients[_fds[i].fd] && _clients[_fds[i].fd]->getBuffer() != "") {
 			//Ira: extracting and executing commands
 				std::string args = _clients[_fds[i].fd]->extractMessage();
-				std::string cmd = extractCMD(args); 
-				if (!executeCMD(cmd, args, *_clients[_fds[i].fd])) {
+				if (!executeCMD(args, *_clients[_fds[i].fd])) {
 					_clients[_fds[i].fd]->clearBuffer();
 					disconnectClient(_fds[i].fd, "");
 					i--;
@@ -202,3 +200,7 @@ void Server::sendPing(const Client& client) {
     send(client.getFd(), msg.c_str(), msg.size(), 0);
 }
 
+//Ira: for tester need to add Clients without sockets
+void Server::addClient(Client &client) {
+	_clients[client.getFd()] = &client;
+}

@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 
 void Server::sendChanMode(Client& sender, Channel* chan) {
 	std::cout << BLUE << "sending mode of chan " << chan->getChName() 

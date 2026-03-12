@@ -1,4 +1,4 @@
-#include "Client.hpp"
+#include "../inc/Client.hpp"
 #include <iostream>
 
 // Constructor: Called when you accept() a new connection
@@ -79,6 +79,10 @@ std::string Client::extractMessage() {
   // Remove the message AND the newline from the buffer
   _buffer.erase(0, pos + 1);
   return message;
+}
+
+void Client::sendMessage(const std::string &msg) const {
+	send(_fd, msg.c_str(), msg.size(), 0);
 }
 
 
