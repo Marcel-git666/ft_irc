@@ -1,4 +1,4 @@
-#include "../inc/Tester.hpp"
+#include "Tester.hpp"
 
 FakeClient::FakeClient(int fd, std::string ip) : Client(fd, ip) {}
 

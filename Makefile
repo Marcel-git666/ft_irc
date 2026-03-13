@@ -9,7 +9,7 @@ CPPFLAGS    = -I$(INC_DIR)
 SRC_DIR			= src
 INC_DIR			= inc
 OBJ_DIR			= obj
-TEST_OBJ_DIR	= obj/test
+TEST_OBJ_DIR	= obj_tests
 
 # === Files ===
 # Just list the filenames here!
@@ -29,7 +29,7 @@ SRCS        = $(addprefix $(SRC_DIR)/, $(SRC_FILES))
 
 # This calculates the object files: src/main.cpp -> obj/main.o
 OBJS        = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
-DEPS        = $(OBJS:.o=.d)
+DEPS        = $(OBJS:.o=.d) $(TEST_OBJS:.o=.d)
 
 TEST_FILES = 	src/Server.cpp \
 				src/Client.cpp \
@@ -42,6 +42,7 @@ TEST_FILES = 	src/Server.cpp \
 				src/modeChannel.cpp \
 				unit_tests/tester_main.cpp \
 				unit_tests/test_registration.cpp \
+				unit_tests/test_privat_msg.cpp \
 				unit_tests/FakeClient.cpp
 
 TEST_OBJS 	= $(patsubst %.cpp,$(TEST_OBJ_DIR)/%.o,$(TEST_FILES))

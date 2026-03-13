@@ -1,0 +1,23 @@
+#include "Tester.hpp"
+
+void test_privat_msg(Server &server, FakeClient &alice, FakeClient &bob, FakeClient &judy) {
+	std::string args;
+
+	std::cout << BLUE << "Private messages testing..." << ENDCOLOR << std::endl;
+	args = "PRIVMSG bob :Hi bob!";
+	server.executeCMD(args, alice);
+	if (bob.getLastMsg() != ":alice!~alice@localhost PRIVMSG bob :Hi bob!\r\n")
+		std::cout << RED << "PRIVMSG for one user: FAIL" << ENDCOLOR << std::endl;
+	else
+		std::cout << GREEN << "PRIVMSG for one user: SUCSESS" << ENDCOLOR << std::endl;
+	args = "PRIVMSG bob,judy :Hello!";
+	server.executeCMD(args, alice);
+	if (bob.getLastMsg() != ":alice!~alice@localhost PRIVMSG bob :Hello!\r\n")
+		std::cout << RED << "PRIVMSG for two user: FAIL" << ENDCOLOR << std::endl;
+	else
+		std::cout << GREEN << "PRIVMSG for two user: SUCSESS" << ENDCOLOR << std::endl;
+	if (judy.getLastMsg() != ":alice!~alice@localhost PRIVMSG judy :Hello!\r\n")
+		std::cout << RED << "PRIVMSG for two user: FAIL" << ENDCOLOR << std::endl;
+	else
+		std::cout << GREEN << "PRIVMSG for two user: SUCSESS" << ENDCOLOR << std::endl;
+}
