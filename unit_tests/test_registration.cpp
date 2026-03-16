@@ -98,9 +98,9 @@ void test_registration(Server &server, FakeClient &alice, FakeClient &bob, FakeC
 	server.executeCMD(args, judy);
 	args = "USER judy 0 * :Pure Evil";
 	server.executeCMD(args, judy);
-	if (bob.getRegistered() == false || judy.getRegistered() == false)
+	if (bob.getRegistered() == false || judy.getRegistered() == false || alice.getRegistered() == false)
 		std::cout << RED << "Bob and Judy weren't regestered" << ENDCOLOR << std::endl;
 	else
-		std::cout << GREEN << "Bob and Judy are regestered" << ENDCOLOR << std::endl;
+		std::cout << PINK << "Alice, Bob and Judy are regestered" << ENDCOLOR << std::endl;
 
 }

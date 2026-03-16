@@ -41,9 +41,11 @@ TEST_FILES = 	src/Server.cpp \
 				src/controlChannels.cpp \
 				src/modeChannel.cpp \
 				unit_tests/tester_main.cpp \
+				unit_tests/FakeClient.cpp \
 				unit_tests/test_registration.cpp \
 				unit_tests/test_privat_msg.cpp \
-				unit_tests/FakeClient.cpp
+				unit_tests/test_join.cpp \
+				unit_tests/test_chan_logic.cpp
 
 TEST_OBJS 	= $(patsubst %.cpp,$(TEST_OBJ_DIR)/%.o,$(TEST_FILES))
 DEPS		= $(TEST_OBJS:.o=.d)

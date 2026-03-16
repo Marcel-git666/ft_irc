@@ -89,8 +89,8 @@ void Server::run() {
     // &fds[0]  : Pointer to the first element of your vector
     // fds.size : Number of items to watch
     // -1       : Timeout (Wait forever until an event occurs) 
-    int poll_count = poll(&_fds[0], _fds.size(), -1);
 
+    int poll_count = poll(&_fds[0], _fds.size(), -1);
     if (poll_count < 0) {
       throw std::runtime_error("poll() failed");
     }

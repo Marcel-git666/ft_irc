@@ -12,5 +12,6 @@ int main() {
 	
 	test_registration(server, alice, bob, judy);
 	test_privat_msg(server, alice, bob, judy);
-
+	test_join(server, alice, bob, judy);
+	test_chan_logic(server, alice, bob, judy);
 }

@@ -12,12 +12,8 @@ void test_privat_msg(Server &server, FakeClient &alice, FakeClient &bob, FakeCli
 		std::cout << GREEN << "PRIVMSG for one user: SUCSESS" << ENDCOLOR << std::endl;
 	args = "PRIVMSG bob,judy :Hello!";
 	server.executeCMD(args, alice);
-	if (bob.getLastMsg() != ":alice!~alice@localhost PRIVMSG bob :Hello!\r\n")
-		std::cout << RED << "PRIVMSG for two user: FAIL" << ENDCOLOR << std::endl;
+	if (bob.getLastMsg() != ":alice!~alice@localhost PRIVMSG bob :Hello!\r\n" || judy.getLastMsg() != ":alice!~alice@localhost PRIVMSG judy :Hello!\r\n")
+		std::cout << RED << "PRIVMSG for two user in a raw: FAIL" << ENDCOLOR << std::endl;
 	else
-		std::cout << GREEN << "PRIVMSG for two user: SUCSESS" << ENDCOLOR << std::endl;
-	if (judy.getLastMsg() != ":alice!~alice@localhost PRIVMSG judy :Hello!\r\n")
-		std::cout << RED << "PRIVMSG for two user: FAIL" << ENDCOLOR << std::endl;
-	else
-		std::cout << GREEN << "PRIVMSG for two user: SUCSESS" << ENDCOLOR << std::endl;
+		std::cout << GREEN << "PRIVMSG for two user in a raw: SUCSESS" << ENDCOLOR << std::endl;
 }

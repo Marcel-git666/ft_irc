@@ -56,7 +56,6 @@ public:
 
 	bool clientIsOperator(int clientFD);
 	bool clientIsMember(int clientFD);
-	bool clientIsMember(std::string clientNickname);
 
 	void deleteClient(std::string clientNickname);
 	void deleteClient(int FD);

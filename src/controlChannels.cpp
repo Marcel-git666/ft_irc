@@ -90,7 +90,8 @@ void Server::broadcastChannel(Channel* ch, std::string command, std::string comm
 			for (std::map<int, std::string>::iterator it = members.begin(); it != members.end(); it++) {
 					sendMsgToClient(msg, *(findClient(it->first)));
 			}
-			std::cout << BLUE << "msg :" << msg << " was broadcasted" << ENDCOLOR << std::endl;
+			if (DEBUG)
+				std::cout << BLUE << "msg : " << msg << " was broadcasted" << ENDCOLOR << std::endl;
 		}
 		else
 			sendError(ch->getChName(), 442, sender);
@@ -146,7 +147,8 @@ void Server::inviteToChan(Client& sender, std::string args) {
 					std::string message = ":" + sender.getNickname() + "!" +
 						sender.getUsername() + "@localhost INVITE " +
 						*it + " " + msg + "\r\n";
-					std::cout << GREEN << "Sending message " << msg << " from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
+					if (DEBUG)
+						std::cout << GREEN << "Sending message " << msg << " from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
 					sendMsgToClient(message, *_clients[FD]); 
 					ch->addInvited(FD);
 				}
@@ -239,7 +241,7 @@ void Server::setTopic(Client& sender, std::string& args) {
 			return ;
 		}
 		ch->setTopic(topic);
-		broadcastChannel(ch, "TOPIC", " :" + topic, sender);
+		broadcastChannel(ch, "TOPIC", ":" + topic, sender);
 	}
 }
 
@@ -255,18 +257,17 @@ void Server::execPART(Client& sender, std::string& args) {
 		colonPos = args.length();
 	if (spasePos != std::string::npos) {
 		targetsStr = args.substr(0, spasePos);
-		std::cout << "Target string " << targetsStr << std::endl;
 		targets = split(targetsStr, ',');
 	}
 	for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
-		std::cout << PINK << "Channel name from args: " << *it << ENDCOLOR << std::endl;
 		Channel* ch;
 		ch = searchChannel(*it);
 		if (!ch)
 			sendError(*it, 403, sender);
 		else {
-			std::cout << PINK << "Channel to leave is : " << ch->getChName() << ENDCOLOR << std::endl;
 			broadcastChannel(ch, "PART", reason, sender);
+			ch->deleteOperator(sender.getFd());
+			ch->deleteClient(sender.getFd());
 		}
 	}
 }

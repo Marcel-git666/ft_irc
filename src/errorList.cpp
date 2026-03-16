@@ -23,7 +23,7 @@ std::string Server::GetErrorStr(std::string args, int errorNumber) {
 	case (462):
 		return(":server 462 * :You may not reregister\r\n");
 	case (471):
-		return(":server 471 * " + args + " :Cannot join channel (+l):\r\n");
+		return(":server 471 * " + args + " :Cannot join channel (+l)\r\n");
 	case (472):
 		return(":server 472 " + args + " :is unknown mode char to me\r\n");
 	case (473):

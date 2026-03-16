@@ -1,7 +1,8 @@
 #include "../inc/Server.hpp"
 
 void Server::sendChanMode(Client& sender, Channel* chan) {
-	std::cout << BLUE << "sending mode of chan " << chan->getChName() 
+	if (DEBUG)
+		std::cout << BLUE << "sending mode of chan " << chan->getChName() 
 		<< " to the client " << sender.getNickname() << ENDCOLOR << std::endl;
 	std::string msg = ":server 324 " + chan->getChName() + " +";
 	if (!chan->getModestring().empty()) {
@@ -25,7 +26,8 @@ void Server::applyMode(Client& sender, Channel* chan, std::string modestring) {
 		if (spasePos != std::string::npos) {
 			modeARGs = split(modestring.substr(spasePos + 1), ' ');
 			modes = modestring.substr(0, spasePos);
-			std::cout << BLUE << "modestring :" << modestring << ENDCOLOR << std::endl;
+			if (DEBUG)
+				std::cout << BLUE << "modestring :" << modestring << ENDCOLOR << std::endl;
 		}
 		else
 			modes = modestring;
@@ -36,7 +38,7 @@ void Server::applyMode(Client& sender, Channel* chan, std::string modestring) {
 			}
 			for (size_t i = 1; i < modes.length(); i++) {
 				if (chan->getModestring().find(modes[i]) == std::string::npos || modes[i] == 'l' || modes[i] == 'k') {
-				//Ira: chaeck if mode isn't in a string, for k and l its possible, if client want to change args
+				//Ira: check if mode isn't in a string, for k and l its possible, if client want to change args
 					modeRes = chan->addMode(modes[i], modeARGs);
 					switch (modeRes)
 					{
@@ -107,10 +109,8 @@ void Server::operateMode(Client& sender, std::string args) {
 			it = targets.erase(it); // Ira: erase returns next valid iterator
 		}
 		else {
-			if (modestring != "") {
+			if (modestring != "")
 				applyMode(sender, ch, modestring);
-
-			}
 			else
 				sendChanMode(sender, ch);
 			++it;
