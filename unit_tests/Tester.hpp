@@ -16,7 +16,7 @@ public:
 
 };
 
-void test_registration(Server &server, FakeClient &alice, FakeClient &bob, FakeClient &judy);
-void test_privat_msg(Server &server, FakeClient &alice, FakeClient &bob, FakeClient &judy);
-void test_join(Server &server, FakeClient &alice, FakeClient &bob, FakeClient &judy);
-void test_chan_logic(Server &server, FakeClient &alice, FakeClient &bob, FakeClient &judy);
+int test_registration(Server &server, FakeClient &alice, FakeClient &bob, FakeClient &judy);
+int test_privat_msg(Server &server, FakeClient &alice, FakeClient &bob, FakeClient &judy);
+int test_join(Server &server, FakeClient &alice, FakeClient &bob, FakeClient &judy);
+int test_chan_logic(Server &server, FakeClient &alice, FakeClient &bob, FakeClient &judy);

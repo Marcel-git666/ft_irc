@@ -87,7 +87,6 @@ public:
 
   //Ira: for tester need to add Clients without sockets
   void addClient(Client &client);
-
 };
 
 #endif

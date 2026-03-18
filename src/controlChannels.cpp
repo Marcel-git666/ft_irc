@@ -189,7 +189,8 @@ void Server::kickOutOfChannel(Client &sender, std::string args) {
 			else
 				colonPos = args.length();
 			std::string targetsStr = args.substr(spasePos + 1, colonPos - (spasePos + 1));
-			std::cout << "Target string " << targetsStr << std::endl;
+			if (DEBUG)
+				std::cout << "Target string " << targetsStr << std::endl;
 			targets = split(targetsStr, ',');
 			for (std::vector<std::string>::iterator it = targets.begin(); it != targets.end(); it++) {
 				if (ch->clientIsMember(clientFdsearch(*it))) {
