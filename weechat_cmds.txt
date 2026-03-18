@@ -22,8 +22,8 @@ Check what server you’re currently on
 /buffer list
 
 
-to switch off tsl 
-/irc.server.<name>.tls off
+to switch off tls 
+/set irc.server.<name>.tls off
 
 
 FOR TEST:

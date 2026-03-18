@@ -8,8 +8,8 @@
 #define ENDCOLOR "\033[0m"
 
 //debug mode (print some extra information, to see what's going on on server)
-#define DEBUG true
+#define DEBUG false
 
 //our params which we can ajust
-#define PING_INTERVAL 20 //time in seconds
+//#define PING_INTERVAL 20 //time in seconds - don't need unless PING clients
 #define USERLEN 12 //length of username (The value MUST be specified and MUST be a positive integer.)
