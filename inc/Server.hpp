@@ -31,7 +31,6 @@ private:
   std::map<int, Client *> _clients;
   std::map<std::string, Channel> _channels;
 
-
   void init();
   void acceptNewClient();
   void disconnectClient(int fd, std::string args); //Ira: for removing when password is wrong, args are needed if Client quit by himself and send a reaason why

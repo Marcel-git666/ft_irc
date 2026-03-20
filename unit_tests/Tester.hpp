@@ -13,7 +13,6 @@ public:
 	std::string getLastMsg() const;
 
 	~FakeClient();
-
 };
 
 int test_registration(Server &server, FakeClient &alice, FakeClient &bob, FakeClient &judy);

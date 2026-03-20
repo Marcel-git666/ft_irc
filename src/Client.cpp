@@ -89,6 +89,7 @@ void Client::sendMessage(const std::string &msg) const {
 std::ostream& operator<<(std::ostream& out, const Client& client) {
 	out << "Client info :\n" << "nickname: " << client.getNickname() << ", realname: " <<
 		client.getRealname() << ", username: " << client.getUsername() 
-		<< " password (true/false): " << client.getHasPassword() << " registered (true/false): " << client.getRegistered();
+		<< " password (true/false): " << client.getHasPassword() << " registered (true/false): " << client.getRegistered() 
+		<< " IP adress: " << client.getIpAddr();
 	return (out);
 }
