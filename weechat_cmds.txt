@@ -21,7 +21,6 @@ Disconnect without deleting (FYI)
 Check what server you’re currently on
 /buffer list
 
-
 to switch off tls 
 /set irc.server.<name>.tls off
 
@@ -29,3 +28,20 @@ to switch off tls
 FOR TEST:
 change username and realname to the new one
 /quote USER <newname> 0 * :<newname> 		-> should send ERROR
+
+
+SEND files: to send files between computers clients should be both on network non of them should be on loccalhost
+so server IP 10.12.9.7 (computer IP) - not 127.0.0.1
+CMD to send 
+/dcc send <nick> <file>
+
+set folder for acception
+/set xfer.file.download_path /home/yourusername/Downloads
+
+can be usefull
+always accept files
+/set xfer.file.auto_accept on
+
+not nesessary but can be set
+/set xfer.network.own_ip *.*.*.*
+/set xfer.network.port_range 50000-50010
