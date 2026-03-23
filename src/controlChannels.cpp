@@ -93,8 +93,8 @@ void Server::broadcastChannel(Channel* ch, std::string command, std::string comm
 			if (DEBUG)
 				std::cout << BLUE << "msg : " << msg << " was broadcasted" << ENDCOLOR << std::endl;
 		}
-		else
-			sendError(ch->getChName(), 442, sender);
+	else
+		sendError(ch->getChName(), 442, sender);
 }
 
 void Server::sendNames(Channel& ch, Client *client) {
