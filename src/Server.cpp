@@ -82,6 +82,7 @@ void Server::init() {
 
   _fds.push_back(pfd); // Add it to your vector
 }
+
 void Server::run() {
   std::cout << "Server is RUNNING..." << std::endl;
   while (_is_running) {
@@ -178,7 +179,6 @@ void Server::acceptNewClient() {
 
 //Ira: close fd, deleting fd from poll fds, delete client obj and clean the clients map
 void Server::disconnectClient(int fd, std::string args) {
-    std::cout << "Client FD " << fd << " disconnected." << std::endl;
 
 	deleteClientFromChannels(fd, args);
     close(fd);
@@ -191,6 +191,7 @@ void Server::disconnectClient(int fd, std::string args) {
             break;
         }
     }
+	std::cout << "Client FD " << fd << " disconnected." << std::endl;
 }
 
 //Ira: if needed, can be deleted
