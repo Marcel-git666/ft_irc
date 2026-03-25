@@ -88,7 +88,7 @@ void Server::broadcastChannel(Channel* ch, std::string command, std::string comm
 			std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() + "@localhost " + command + " " + ch->getChName() + " " + comment + "\r\n";
 			std::map<int, std::string> members = ch->getMembers();
 			for (std::map<int, std::string>::iterator it = members.begin(); it != members.end(); it++) {
-					sendMsgToClient(msg, *(findClient(it->first)));
+				sendMsgToClient(msg, *(findClient(it->first)));
 			}
 			if (DEBUG)
 				std::cout << BLUE << "msg : " << msg << " was broadcasted" << ENDCOLOR << std::endl;

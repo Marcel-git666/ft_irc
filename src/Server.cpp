@@ -9,7 +9,9 @@ Server::Server(int port, std::string password)
   init();
 }
 
-Server::~Server() {}
+Server::~Server() {
+	cleanMemory();
+}
 
 void Server::init() {
   // A. Create the Socket
@@ -177,7 +179,7 @@ void Server::acceptNewClient() {
   std::cout << "New Client Connected! FD: " << newFd << std::endl;
 }
 
-//Ira: close fd, deleting fd from poll fds, delete client obj and clean the clients map
+//Ira: close fd, d, but probably too flawless.eleting fd from poll fds, delete client obj and clean the clients map
 void Server::disconnectClient(int fd, std::string args) {
 
 	deleteClientFromChannels(fd, args);
@@ -204,4 +206,18 @@ void Server::sendPing(const Client& client) {
 //Ira: for tester need to add Clients without sockets
 void Server::addClient(Client &client) {
 	_clients[client.getFd()] = &client;
+}
+
+
+void Server::cleanMemory() {
+	if (!_channels.empty()) {
+		_channels.clear();
+	}
+	if (!_clients.empty()) {
+		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++) {
+			close(it->first);
+			delete it->second;
+		}
+		_clients.clear();
+	}
 }

@@ -160,7 +160,7 @@ void Server::sendError(std::string args, int errorNumber, const Client& client) 
 void Server::sendMsgToClient(std::string msg, const Client& client) {
 	client.sendMessage(msg);
 	if (DEBUG)
-		std::cout << GREEN << "Message '" << msg << "' from server for client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
+		std::cout << GREEN << "Message " << msg << "' from server from client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }
 
 int Server::clientFdsearch(std::string nickName) {

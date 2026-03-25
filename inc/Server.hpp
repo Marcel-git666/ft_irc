@@ -47,6 +47,7 @@ public:
   Server(int port, std::string password);
   ~Server();
   void run();
+  void cleanMemory();
 
   //Ira: parcer
   std::string extractCMD(std::string& args);

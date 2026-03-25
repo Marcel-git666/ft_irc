@@ -4,7 +4,7 @@
 std::string Server::checkNickname(std::string arg) {
 	if (!_clients.empty()) {
 		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++) {
-			if (it->second->getNickname() == arg)
+			if (it->second && it->second->getNickname() == arg)
 				return ("433");
 		}
 	}
