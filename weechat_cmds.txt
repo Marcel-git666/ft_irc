@@ -5,8 +5,6 @@ add server:
 	/server add <name> 127.0.0.1/6667 (or other port)
 
 connect with password
-	/server add <name> localhost/6667 -password mypassword
-if added server without password, can set it for next time
 	/set irc.server.<name>.password
 
 See the list of servers you added
@@ -21,11 +19,27 @@ Disconnect without deleting (FYI)
 Check what server you’re currently on
 /buffer list
 
-
-to switch off tsl 
-/irc.server.<name>.tls off
+to switch off tls 
+/set irc.server.<name>.tls off
 
 
 FOR TEST:
 change username and realname to the new one
 /quote USER <newname> 0 * :<newname> 		-> should send ERROR
+
+
+SEND files: to send files between computers clients should be both on network non of them should be on loccalhost
+so server IP 10.12.9.7 (computer IP) - not 127.0.0.1
+CMD to send 
+/dcc send <nick> <file>
+
+set folder for acception
+/set xfer.file.download_path /home/yourusername/Downloads
+
+can be usefull
+always accept files
+/set xfer.file.auto_accept on
+
+not nesessary but can be set
+/set xfer.network.own_ip *.*.*.*
+/set xfer.network.port_range 50000-50010
