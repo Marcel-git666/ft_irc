@@ -1,4 +1,4 @@
-#include "Client.hpp"
+#include "../inc/Client.hpp"
 #include <iostream>
 
 // Constructor: Called when you accept() a new connection
@@ -81,10 +81,15 @@ std::string Client::extractMessage() {
   return message;
 }
 
+void Client::sendMessage(const std::string &msg) const {
+	send(_fd, msg.c_str(), msg.size(), 0);
+}
+
 
 std::ostream& operator<<(std::ostream& out, const Client& client) {
 	out << "Client info :\n" << "nickname: " << client.getNickname() << ", realname: " <<
 		client.getRealname() << ", username: " << client.getUsername() 
-		<< " password (true/false): " << client.getHasPassword() << " registered (true/false): " << client.getRegistered();
+		<< " password (true/false): " << client.getHasPassword() << " registered (true/false): " << client.getRegistered() 
+		<< " IP adress: " << client.getIpAddr();
 	return (out);
 }

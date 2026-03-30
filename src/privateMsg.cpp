@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 
 std::vector<std::string> Server::split(const std::string& targetsStr, char delimeter) {
 	std::vector<std::string> targets;
@@ -25,10 +25,12 @@ void Server::sendPrivateMsg(const Client& sender, std::string args) {
 			std::string message = ":" + sender.getNickname() + "!" +
                 sender.getUsername() + "@localhost PRIVMSG " +
                 *it + " " + msg + "\r\n";
-			std::cout << GREEN << "Sending message from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
+			if (DEBUG)
+				std::cout << GREEN << "Sending message from " << sender.getNickname() << " to " << _clients[FD]->getNickname() << ENDCOLOR << std::endl;
 			sendMsgToClient(message, *_clients[FD]);
 		}
 		else
 			sendError(*it, 401, sender);
 	}
 }
+

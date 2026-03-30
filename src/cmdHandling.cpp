@@ -1,7 +1,10 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 
 //Ira: execute commands
-bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
+bool Server::executeCMD(std::string& args, Client& client) {
+	std::string cmd = extractCMD(args);
+	if (cmd.empty())
+		return (false);
 	if (cmd == "PASS") {
 		if (args != _password && !_password.empty()) {
 			if (DEBUG)
@@ -47,7 +50,7 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 			//to expect an empty username is an extra safety, but we have error massage for it so I included it
 			std::string username = args.substr(0, args.find(' ')); //find first arg
 			if (username.empty())
-				sendError(args, 461, client);
+				sendError("USER", 461, client);
 			if (username.length() > USERLEN) {
 				username = username.substr(0, USERLEN);
 				//Ira: IRCstandard: "If this length is advertised, the username 
@@ -58,10 +61,12 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 				//Ira: IRCstandard: "... the username provided by the client SHOULD be prefixed 
 				// by a tilde ('~', 0x7E) to show that this value is user-set."
 			client.setUsername(username);
-			std::cout << GREEN << "Client FD " << client.getFd() << " username is " << client.getUsername() << ENDCOLOR << std::endl;
+			if (DEBUG)
+				std::cout << GREEN << "Client FD " << client.getFd() << " username is " << client.getUsername() << ENDCOLOR << std::endl;
 			std::string realname = args.substr(args.find(':') + 1);
 			client.setRealname(realname);
-			std::cout << GREEN << "Client FD " << client.getFd() << " realname is " << client.getRealname() << ENDCOLOR << std::endl;
+			if (DEBUG)
+				std::cout << GREEN << "Client FD " << client.getFd() << " realname is " << client.getRealname() << ENDCOLOR << std::endl;
 			if (!registerClient(client)) //Ira: registration if wasn't
 				return (false); // we need tu return smth for the case when client can't be registere because of password absence
 		}
@@ -80,7 +85,7 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 			std::cout << GREEN << "PING command was accepted and answered" << ENDCOLOR << std::endl;
 	}
 	else if (cmd == "QUIT")
-		disconnectClient(client.getFd());
+		disconnectClient(client.getFd(), args);
 	else {
 		if (client.getRegistered()) {
 			if (cmd == "PRIVMSG") {
@@ -93,13 +98,34 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 				if (args[0] != '#')
 					sendError(args, 403, client);
 				else
-					connectToChannel(&client, args);
+					joinChannel(&client, args);
 			}
 			else if (cmd == "INVITE"){
 				inviteToChan(client, args);
 			}
 			else if (cmd == "KICK") {
 				kickOutOfChannel(client, args);
+			}
+			else if (cmd == "MODE") {
+				if (args[0] != '#')
+					sendError(args, 403, client);
+				else
+					operateMode(client, args);
+			}
+			else if (cmd == "TOPIC") {
+				if (args[0] != '#')
+					sendError(args, 403, client);
+				else
+					setTopic(client, args);
+			}
+			else if (cmd == "PART") { 
+				//Ira: when client close the channel not "/quit" server it sends PART command,
+				// also you can do /part #channel1,#channel2,#channel3... :reason from client side, 
+				// but from inside the channel you can only do /close (reason automaticaly generated)
+				if (args[0] != '#')
+					sendError(args, 403, client);
+				else
+					execPART(client, args);
 			}
 		}
 	}
@@ -109,25 +135,15 @@ bool Server::executeCMD(std::string cmd, std::string args, Client& client) {
 //Ira: extract command, and cut the message to the args
 std::string Server::extractCMD(std::string& args) {
 	size_t pos = args.find(' ');
+	if (pos == std::string::npos)
+		return("");
 	std::string command = args.substr(0, pos);
-	std::cout << "Command from client: " << command;
+	if (DEBUG)
+		std::cout << "Command from client: " << command;
 	args = args.substr(pos + 1, args.length());
-	std::cout << " ARGS for this command: " << args << "." << std::endl;
+	if (DEBUG)
+		std::cout << " ARGS for this command: " << args << "." << std::endl;
 	return command;
-}
-
-//Ira: check Nickname on Uniqueness and rules
-std::string Server::checkNickname(std::string arg) {
-	if (!_clients.empty()) {
-		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++) {
-			if (it->second->getNickname() == arg)
-				return ("433");
-		}
-	}
-	if (isdigit(arg[0]) || arg.find(':') != std::string::npos
-		|| arg.find('#') != std::string::npos || arg.find(' ') != std::string::npos)
-			return("432");
-	return ("ok");
 }
 
 void Server::sendPong(const Client& client, std::string token) {
@@ -135,52 +151,32 @@ void Server::sendPong(const Client& client, std::string token) {
 }
 
 void Server::sendError(std::string args, int errorNumber, const Client& client) {
-	std::string err = GetErrorStr(args, errorNumber, client);
-	send(client.getFd(), err.c_str(), err.size(), 0);
+	std::string err = GetErrorStr(args, errorNumber);
+	client.sendMessage(err);
 	if (DEBUG)
 		std::cout << PINK << "Error " << errorNumber << " for client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }
 
 void Server::sendMsgToClient(std::string msg, const Client& client) {
-	send(client.getFd(), msg.c_str(), msg.size(), 0);
+	client.sendMessage(msg);
 	if (DEBUG)
-		std::cout << GREEN << "Message from server for client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
-}
-
-bool Server::registerClient(Client& client) {
-	if (!_password.empty() && !client.getHasPassword()) {
-		sendError(client.getNickname(), 464, client);
-		return (false);
-	}
-	if (client.setRegistered()) { //Ira: registered if all set, if not return false in next if condition, all messages about errors have been sent before
-	std::string msg = ":server 001 " + client.getNickname() + " :Welcome to the IRC Network, " + client.getNickname() + "\r\n";
-		sendMsgToClient(msg, client);
-		//Ira: messages below isn't obligated, but I did it to be more like the original IRC protocol
-		msg = ":server 002 :Your host is 42_ircserv, running version 01\r\n";
-		sendMsgToClient(msg, client);
-		msg = ":server 003 :This server was created " + _creationTime + "\r\n";
-		sendMsgToClient(msg, client);
-		// format: 004 <nick> <servername> <version> <usermodes> <channelmodes>
-		// usermodes = o -operators 
-		// channelmodes = i  (invite-only); t  (topic restricted); k  (key/password); o  (channel operator); l  (user limit)
-		msg = ":server 004 " + client.getNickname() + " 42_ircserv 1.0 o itkol\r\n"; 
-		sendMsgToClient(msg, client);
-		if (DEBUG) {
-			std::cout << GREEN << "Client FD " << client.getFd() << " has been registered" << ENDCOLOR << std::endl;
-			std::cout << client << std::endl;
-		}
-	}
-	else {
-		if (DEBUG) 
-			std::cout << RED << "Client FD " << client.getFd() << " couldn't be registered" << ENDCOLOR << std::endl;
-	}
-	return (true);
+		std::cout << GREEN << "Message " << msg << "' from server from client FD " << client.getFd() << " has been sent!" << ENDCOLOR << std::endl;
 }
 
 int Server::clientFdsearch(std::string nickName) {
-	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-		if (it->second->getNickname() == nickName)
-			return it->first;   // return the fd (the key)
+	if (nickName != "") {
+		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+			if ((it->second)->getNickname() == nickName)
+				return it->first;  // return the fd (the key)
+		}
 	}
 	return (-1);
+}
+
+Client* Server::findClient(int clientFD) {
+	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); it++) {
+		if (it->first == clientFD)
+			return (it->second);
+	}
+	return (NULL);
 }

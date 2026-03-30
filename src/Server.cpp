@@ -1,15 +1,17 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 
-extern bool isRunning;
+//extern bool isRunning; Ira: I put it in Server class
 
 Server::Server(int port, std::string password)
-    : _port(port), _password(password) {
+    :  _is_running(true), _port(port), _password(password) {
   std::time_t now = std::time(NULL);
   _creationTime = std::ctime(&now);
   init();
 }
 
-Server::~Server() {}
+Server::~Server() {
+	cleanMemory();
+}
 
 void Server::init() {
   // A. Create the Socket
@@ -85,13 +87,13 @@ void Server::init() {
 
 void Server::run() {
   std::cout << "Server is RUNNING..." << std::endl;
-  while (isRunning) {
+  while (_is_running) {
     // 1. Wait for events
     // &fds[0]  : Pointer to the first element of your vector
     // fds.size : Number of items to watch
     // -1       : Timeout (Wait forever until an event occurs) 
-    int poll_count = poll(&_fds[0], _fds.size(), -1);
 
+    int poll_count = poll(&_fds[0], _fds.size(), -1);
     if (poll_count < 0) {
       throw std::runtime_error("poll() failed");
     }
@@ -119,7 +121,7 @@ void Server::run() {
             // Client disconnected or error
             std::cout << "Client FD " << _fds[i].fd << " disconnected."
                       << std::endl;
-			disconnectClient(_fds[i].fd); //Ira: I put all stuff for client disconnection and poll fds deleting into his function
+			disconnectClient(_fds[i].fd, ""); //Ira: I put all stuff for client disconnection and poll fds deleting into his function
             i--; // Adjust index since vector shrank
           } else {
             // Data received!
@@ -128,13 +130,12 @@ void Server::run() {
 
             std::cout << "Buffer for FD " << _fds[i].fd << ": "
                       << _clients[_fds[i].fd]->getBuffer() << std::endl;
+					  while (_clients[_fds[i].fd] && _clients[_fds[i].fd]->getBuffer() != "") {
 			//Ira: extracting and executing commands
-			while (_clients[_fds[i].fd] && _clients[_fds[i].fd]->getBuffer() != "") {
 				std::string args = _clients[_fds[i].fd]->extractMessage();
-				std::string cmd = extractCMD(args); 
-				if (!executeCMD(cmd, args, *_clients[_fds[i].fd])) {
+				if (!executeCMD(args, *_clients[_fds[i].fd])) {
 					_clients[_fds[i].fd]->clearBuffer();
-					disconnectClient(_fds[i].fd);
+					disconnectClient(_fds[i].fd, "");
 					i--;
 					break;
 				}
@@ -178,12 +179,11 @@ void Server::acceptNewClient() {
   std::cout << "New Client Connected! FD: " << newFd << std::endl;
 }
 
-//Ira: close fd, deleting fd from poll fds, delete client obj and clean the clients map
-void Server::disconnectClient(int fd) {
-    std::cout << "Client FD " << fd << " disconnected." << std::endl;
+//Ira: close fd, d, but probably too flawless.eleting fd from poll fds, delete client obj and clean the clients map
+void Server::disconnectClient(int fd, std::string args) {
 
+	deleteClientFromChannels(fd, args);
     close(fd);
-	deleteClientFromChannels(fd);
     delete _clients[fd];
     _clients.erase(fd);
 
@@ -193,6 +193,7 @@ void Server::disconnectClient(int fd) {
             break;
         }
     }
+	std::cout << "Client FD " << fd << " disconnected." << std::endl;
 }
 
 //Ira: if needed, can be deleted
@@ -202,3 +203,21 @@ void Server::sendPing(const Client& client) {
     send(client.getFd(), msg.c_str(), msg.size(), 0);
 }
 
+//Ira: for tester need to add Clients without sockets
+void Server::addClient(Client &client) {
+	_clients[client.getFd()] = &client;
+}
+
+
+void Server::cleanMemory() {
+	if (!_channels.empty()) {
+		_channels.clear();
+	}
+	if (!_clients.empty()) {
+		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++) {
+			close(it->first);
+			delete it->second;
+		}
+		_clients.clear();
+	}
+}
