@@ -42,4 +42,6 @@
 
 # Ira_debug
 .vscode
-ircerv_debug
+ircserv_debug
+ircserv
+cmd_tester

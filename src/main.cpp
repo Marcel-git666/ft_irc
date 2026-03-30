@@ -1,9 +1,9 @@
-#include "Server.hpp"
+#include "../inc/Server.hpp"
 #include <csignal> // <--- REQUIRED for signal()
 #include <cstdlib>
 #include <iostream>
 
-// 1. Global flag to control the loop
+// 1. Global flag to control the loop 
 bool isRunning = true;
 
 // 2. The function that runs when you press CTRL+C
@@ -54,6 +54,5 @@ int main(int argc, char **argv) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   }
-
   return 0;
 }

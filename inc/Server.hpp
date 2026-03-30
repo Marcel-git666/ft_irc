@@ -3,22 +3,90 @@
 
 #include "Client.hpp"
 #include "Channel.hpp"
-#include <vector>
+#include <map>
 #include <poll.h>
+#include <string>
+#include <vector>
+#include "Definitions.hpp" //Ira: I put defines in a different file to keep this hpp more clear
+#include <ctime> // Ira: time of server creation
+#include <sstream> // Ira: For reading from string, split targets in a private message
+#include <arpa/inet.h> // for inet_ntoa
+#include <cstring>     // <--- REQUIRED for std::memset
+#include <fcntl.h>     // <--- REQUIRED for fcntl, F_SETFL, O_NONBLOCK
+#include <iostream>
+#include <netinet/in.h> // Required for sockaddr_in
+#include <stdexcept>
+#include <sys/socket.h>
+#include <unistd.h> // for close()
+#include <cctype> // Ira: for isdigit nickname checking
 
 class Server {
-    private:
-        int         _port;
-        std::string _password;
-        
-        // This vector will hold the File Descriptors for poll()
-        std::vector<struct pollfd> _fds;
+private:
+  bool _is_running;
+  int _port;
+  std::string _password;
+  int _serverSocketFd;
+  std::string _creationTime;
+  std::vector<struct pollfd> _fds; // The list of file descriptors for poll()
+  std::map<int, Client *> _clients;
+  std::map<std::string, Channel> _channels;
 
-    public:
-        Server(int port, std::string password);
-        ~Server();
+  void init();
+  void acceptNewClient();
+  void disconnectClient(int fd, std::string args); //Ira: for removing when password is wrong, args are needed if Client quit by himself and send a reaason why
+  void sendMsgToClient(std::string msg, const Client& client); //Ira: sending message to the client
+  void sendError(std::string args, int errorNumber, const Client& client); //Ira: sending error message to the client
+  std::string GetErrorStr(std::string args, int errorNumber); //generate Error message by Error number
+  void sendPing(const Client& client); //Ira: don't know if we need it, can be deleted
+  void sendPong(const Client& client, std::string token); //Ira: for answering Clients PING if it comes
+  // OCF - Private to prevent copying
+  Server(const Server &other);
+  Server &operator=(const Server &other);
 
-        void run(); // The main loop
+public:
+  Server(int port, std::string password);
+  ~Server();
+  void run();
+  void cleanMemory();
+
+  //Ira: parcer
+  std::string extractCMD(std::string& args);
+
+  //Ira: executer
+  bool executeCMD(std::string& args, Client& client); //return true if everithing ok
+
+  //Ira: utils
+  std::string checkNickname(std::string arg); //for nickname uniqness
+  int clientFdsearch(std::string nickName); //get FD from nickname
+  Client* findClient(int clientFD);
+
+  bool registerClient(Client& client);
+  void sendPrivateMsg(const Client& client, std::string args);
+
+
+  //Ira: channel operations
+  void joinChannel(Client* client, std::string& args);
+  void connectToChannel(Client* client, std::string& channelName, std::string key);
+  void kickOutOfChannel(Client& client, std::string args);
+  void inviteToChan(Client& sender, std::string args);
+  void operateMode(Client& sender, std::string);
+  void applyMode(Client& sender, Channel* chan, std::string modestring);
+  void sendChanMode(Client& sender, Channel* chan);
+  void setTopic(Client& client, std::string& args);
+  void execPART(Client& sender, std::string& args);
+  void broadcastChannel(Channel* ch, std::string command, std::string topic, Client& sender);
+
+  //Ira: utils for channelCMD
+  Channel* searchChannel(const std::string& name);
+  void sendToChannel(Client &sender, std::string args);
+  void sendNames(Channel& ch, Client *client);
+  std::vector<std::string> split(const std::string& targetsStr, char delimeter);
+
+  //Ira: for cleaning when client disconnecting
+  void deleteClientFromChannels(int FD, std::string reason);
+
+  //Ira: for tester need to add Clients without sockets
+  void addClient(Client &client);
 };
 
 #endif
