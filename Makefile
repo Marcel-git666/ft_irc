@@ -38,8 +38,8 @@ BOT_SRCS    = $(addprefix $(BOT_DIR)/, $(BOT_FILES))
 # Bot objects will be inside obj/bot/
 BOT_OBJS    = $(patsubst $(BOT_DIR)/%.cpp,$(OBJ_DIR)/bot/%.o,$(BOT_SRCS))
 
-DEPS        = $(OBJS:.o=.d) $(BOT_OBJS:.o=.d)
-DEPS        = $(OBJS:.o=.d) $(TEST_OBJS:.o=.d)
+APP_DEPS    = $(OBJS:.o=.d)
+BOT_DEPS    = $(BOT_OBJS:.o=.d)
 
 TEST_FILES = 	src/Server.cpp \
 				src/Client.cpp \
@@ -58,7 +58,7 @@ TEST_FILES = 	src/Server.cpp \
 				unit_tests/test_chan_logic.cpp
 
 TEST_OBJS 	= $(patsubst %.cpp,$(TEST_OBJ_DIR)/%.o,$(TEST_FILES))
-DEPS		= $(TEST_OBJS:.o=.d)
+TEST_DEPS	= $(TEST_OBJS:.o=.d)
 
 # === Rules ===
 all: $(NAME)
@@ -116,6 +116,6 @@ re: fclean all
 retest: fclean test
 
 # Include dependencies (if they exist)
--include $(DEPS)
+-include $(APP_DEPS) $(BOT_DEPS) $(TEST_DEPS)
 
 .PHONY: all clean fclean re test bonus
