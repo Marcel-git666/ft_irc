@@ -12,27 +12,28 @@ private:
   int _socketFd;
   bool _isRunning;
 
-  // OCF - Zakázání kopírování (Bot by se neměl kopírovat kvůli socketu)
+  // OCF - Disable copying (Bot should not be copied to prevent double socket
+  // closing)
   Bot(const Bot &other);
   Bot &operator=(const Bot &other);
 
-  // Interní síťové metody
+  // Internal network operations
   void connectToServer();
   void authenticate();
   void listenLoop();
   void sendMessage(const std::string &msg);
 
-  // Mozek bota (zpracování textu)
+  // Bot logic and message processing
   void processMessage(const std::string &msg);
   void sendJoke(const std::string &target);
   void sendHelp(const std::string &target);
 
 public:
-  // Konstruktor a Destruktor
+  // Constructor and Destructor
   Bot(const std::string &ip, int port, const std::string &password);
   ~Bot();
 
-  // Hlavní spouštěcí metoda
+  // Main control methods
   void run();
   void stop();
 };

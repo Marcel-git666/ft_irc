@@ -5,10 +5,10 @@
 
 Bot *globalBot = NULL;
 
-// Zpracování Ctrl+C pro bota
+// Handles the SIGINT (Ctrl+C) signal to safely terminate the bot.
 void signalHandler(int signum) {
   (void)signum;
-  std::cout << "\nUkoncuji bota..." << std::endl;
+  std::cout << std::endl;
   if (globalBot) {
     globalBot->stop();
   }
@@ -16,7 +16,7 @@ void signalHandler(int signum) {
 
 int main(int argc, char **argv) {
   if (argc != 4) {
-    std::cerr << "Pouziti: ./ircbot <IP> <port> <heslo>" << std::endl;
+    std::cerr << "Usage: ./ircbot <IP> <port> <password>" << std::endl;
     return 1;
   }
 
@@ -30,10 +30,10 @@ int main(int argc, char **argv) {
     Bot myBot(ip, port, password);
     globalBot = &myBot;
 
-    myBot.run(); // Zde se program "zasekne" v nekonečné smyčce
+    myBot.run();
 
   } catch (const std::exception &e) {
-    std::cerr << "Fatalni chyba bota: " << e.what() << std::endl;
+    std::cerr << "Fatal bot error: " << e.what() << std::endl;
     return 1;
   }
 
