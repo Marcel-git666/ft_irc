@@ -1,6 +1,7 @@
 # === Variables ===
 NAME        = ircserv
 CMD_TESTER	= cmd_tester
+BOT_NAME    = ircbot
 CXX         = c++
 CXXFLAGS    = -Wall -Wextra -Werror -std=c++98
 CPPFLAGS    = -I$(INC_DIR)
@@ -10,6 +11,7 @@ SRC_DIR			= src
 INC_DIR			= inc
 OBJ_DIR			= obj
 TEST_OBJ_DIR	= obj_tests
+BOT_DIR     = bot
 
 # === Files ===
 # Just list the filenames here!
@@ -29,7 +31,15 @@ SRCS        = $(addprefix $(SRC_DIR)/, $(SRC_FILES))
 
 # This calculates the object files: src/main.cpp -> obj/main.o
 OBJS        = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
-DEPS        = $(OBJS:.o=.d) $(TEST_OBJS:.o=.d)
+
+# === Files (Bot) ===
+BOT_FILES   = main.cpp Bot.cpp
+BOT_SRCS    = $(addprefix $(BOT_DIR)/, $(BOT_FILES))
+# Bot objects will be inside obj/bot/
+BOT_OBJS    = $(patsubst $(BOT_DIR)/%.cpp,$(OBJ_DIR)/bot/%.o,$(BOT_SRCS))
+
+APP_DEPS    = $(OBJS:.o=.d)
+BOT_DEPS    = $(BOT_OBJS:.o=.d)
 
 TEST_FILES = 	src/Server.cpp \
 				src/Client.cpp \
@@ -48,7 +58,7 @@ TEST_FILES = 	src/Server.cpp \
 				unit_tests/test_chan_logic.cpp
 
 TEST_OBJS 	= $(patsubst %.cpp,$(TEST_OBJ_DIR)/%.o,$(TEST_FILES))
-DEPS		= $(TEST_OBJS:.o=.d)
+TEST_DEPS	= $(TEST_OBJS:.o=.d)
 
 # === Rules ===
 all: $(NAME)
@@ -58,11 +68,25 @@ $(NAME): $(OBJS)
 	@$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
 	@echo "Ready!"
 
+# --- BONUS RULE (Bot compilation) ---
+bonus: $(BOT_NAME)
+
+$(BOT_NAME): $(BOT_OBJS)
+		@echo "Linking $(BOT_NAME)..."
+		@$(CXX) $(CXXFLAGS) $(BOT_OBJS) -o $(BOT_NAME)
+		@echo "Bot $(BOT_NAME) Ready!"
+
 # Compile .cpp to .o
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	@echo "Compiling $<..."
 	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -MMD -MP -c $< -o $@
+
+# Compile Bot .cpp to .o
+$(OBJ_DIR)/bot/%.o: $(BOT_DIR)/%.cpp
+		@mkdir -p $(dir $@)
+		@echo "Compiling $<..."
+		@$(CXX) $(CXXFLAGS) -I$(BOT_DIR) -MMD -MP -c $< -o $@
 
 test: $(CMD_TESTER)
 
@@ -82,7 +106,7 @@ test_clean:
 	@rm -rf $(TEST_OBJ_DIR)
 
 fclean: clean
-	@rm -f $(NAME) $(CMD_TESTER)
+	@rm -f $(NAME) $(BOT_NAME) $(CMD_TESTER)
 
 test_fclean : test_clean
 	@rm -f $(CMD_TESTER)
@@ -92,6 +116,6 @@ re: fclean all
 retest: fclean test
 
 # Include dependencies (if they exist)
--include $(DEPS)
+-include $(APP_DEPS) $(BOT_DEPS) $(TEST_DEPS)
 
-.PHONY: all clean fclean re test
+.PHONY: all clean fclean re test bonus

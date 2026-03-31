@@ -44,4 +44,5 @@
 .vscode
 ircserv_debug
 ircserv
+ircbot
 cmd_tester
