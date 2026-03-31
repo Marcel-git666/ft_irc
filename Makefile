@@ -106,8 +106,7 @@ test_clean:
 	@rm -rf $(TEST_OBJ_DIR)
 
 fclean: clean
-	@rm -f $(NAME) $(BOT_NAME)
-	@rm -f $(NAME) $(CMD_TESTER)
+	@rm -f $(NAME) $(BOT_NAME) $(CMD_TESTER)
 
 test_fclean : test_clean
 	@rm -f $(CMD_TESTER)
