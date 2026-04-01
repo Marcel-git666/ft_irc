@@ -1,6 +1,7 @@
 #ifndef BOT_HPP
 #define BOT_HPP
 
+#include <csignal>
 #include <string>
 
 class Bot {
@@ -10,7 +11,8 @@ private:
   std::string _password;
   std::string _nickname;
   int _socketFd;
-  bool _isRunning;
+  volatile bool _isRunning;
+  std::string _buffer;
 
   // OCF - Disable copying (Bot should not be copied to prevent double socket
   // closing)
@@ -18,7 +20,6 @@ private:
   Bot &operator=(const Bot &other);
 
   // Internal network operations
-  void connectToServer();
   void authenticate();
   void listenLoop();
   void sendMessage(const std::string &msg);
@@ -35,7 +36,6 @@ public:
 
   // Main control methods
   void run();
-  void stop();
 };
 
 #endif

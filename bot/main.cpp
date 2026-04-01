@@ -3,15 +3,12 @@
 #include <cstdlib>
 #include <iostream>
 
-Bot *globalBot = NULL;
+volatile sig_atomic_t g_signaled = 0;
 
 // Handles the SIGINT (Ctrl+C) signal to safely terminate the bot.
 void signalHandler(int signum) {
   (void)signum;
-  std::cout << std::endl;
-  if (globalBot) {
-    globalBot->stop();
-  }
+  g_signaled = 1;
 }
 
 int main(int argc, char **argv) {
@@ -20,7 +17,11 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  signal(SIGINT, signalHandler);
+  struct sigaction sa;
+  sa.sa_handler = signalHandler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  sigaction(SIGINT, &sa, NULL);
 
   std::string ip = argv[1];
   int port = std::atoi(argv[2]);
@@ -28,8 +29,6 @@ int main(int argc, char **argv) {
 
   try {
     Bot myBot(ip, port, password);
-    globalBot = &myBot;
-
     myBot.run();
 
   } catch (const std::exception &e) {
