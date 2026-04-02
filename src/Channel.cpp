@@ -69,12 +69,10 @@ int Channel::deleteOperator(int clientFD) {
   for (itOp = _operatorsFDs.begin(); itOp != _operatorsFDs.end(); itOp++) {
     if (*itOp == clientFD) {
       _operatorsFDs.erase(itOp);
-      break;
+      return 0;
     }
   }
-  if (itOp == _operatorsFDs.end())
-    return (-1);
-  return (0);
+  return (-1);
 }
 
 void Channel::addInvited(int FD_inv) { _invited_FD.push_back(FD_inv); }
