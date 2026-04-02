@@ -8,24 +8,14 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+extern volatile sig_atomic_t g_signaled;
 // Initializes the Bot with given IP, port, and password. Seeds the random
 // number generator.
+// Establishes a TCP connection to the specified IRC server.
 Bot::Bot(const std::string &ip, int port, const std::string &password)
     : _ip(ip), _port(port), _password(password), _nickname("MrBot"),
-      _socketFd(-1), _isRunning(true) {
+      _isRunning(true), _buffer("") {
   std::srand(std::time(NULL));
-}
-
-// Safely closes the socket when the Bot instance is destroyed.
-Bot::~Bot() {
-  if (_socketFd != -1) {
-    close(_socketFd);
-    std::cout << "Bot has finished, socket is closed." << std::endl;
-  }
-}
-
-// Establishes a TCP connection to the specified IRC server.
-void Bot::connectToServer() {
   _socketFd = socket(AF_INET, SOCK_STREAM, 0);
   if (_socketFd == -1) {
     throw std::runtime_error("Error: Failed to create socket");
@@ -40,7 +30,16 @@ void Bot::connectToServer() {
 
   if (connect(_socketFd, reinterpret_cast<struct sockaddr *>(&addr),
               sizeof(addr)) == -1) {
+    close(_socketFd);
     throw std::runtime_error("Error: Failed to connect to server");
+  }
+}
+
+// Safely closes the socket when the Bot instance is destroyed.
+Bot::~Bot() {
+  if (_socketFd != -1) {
+    close(_socketFd);
+    std::cout << "Bot has finished, socket is closed." << std::endl;
   }
 }
 
@@ -63,7 +62,6 @@ void Bot::authenticate() {
 
 // Main execution flow: connects, authenticates, and starts listening.
 void Bot::run() {
-  connectToServer();
   authenticate();
   listenLoop();
 }
@@ -85,12 +83,17 @@ void Bot::processMessage(const std::string &msg) {
     } else if (msg.find("!help") != std::string::npos) {
       sendHelp(sender);
     }
+  } else if (msg.find("PING") != std::string::npos) {
+    size_t pos = msg.find(":");
+    if (pos != std::string::npos) {
+      sendMessage("PONG :" + msg.substr(pos + 1));
+    }
   }
 }
 
 // Selects a random joke from an array and sends it to the target user.
 void Bot::sendJoke(const std::string &target) {
-  std::string jokes[5] = {
+  static const std::string jokes[5] = {
       "Why do programmers prefer dark mode? Because light attracts bugs.",
       "Chuck Norris's keyboard doesn't have a Ctrl key because nothing "
       "controls Chuck Norris.",
@@ -112,15 +115,6 @@ void Bot::sendHelp(const std::string &target) {
               "I am a simple bot, but I do my best!");
 }
 
-// Handles graceful shutdown by unblocking recv() and terminating the loop.
-void Bot::stop() {
-  std::cout << "Shutting down MrBot (Ctrl+C detected)..." << std::endl;
-  _isRunning = false;
-  if (_socketFd != -1) {
-    shutdown(_socketFd, SHUT_RDWR);
-  }
-}
-
 // Infinite loop that continuously waits for and reads data from the server.
 void Bot::listenLoop() {
   while (_isRunning) {
@@ -130,13 +124,21 @@ void Bot::listenLoop() {
     int bytes = recv(_socketFd, buffer, sizeof(buffer) - 1, 0);
 
     if (bytes <= 0) {
-      std::cout << "Connection with server has been shut down." << std::endl;
+      if (g_signaled) {
+        std::cout << "\nShutting down MrBot (Ctrl+C detected)..." << std::endl;
+      } else {
+        std::cout << "Connection with server has been shut down." << std::endl;
+      }
       _isRunning = false;
       break;
     }
-
-    std::string text = buffer;
-    std::cout << "Listening: " << text;
-    processMessage(text);
+    _buffer += buffer;
+    size_t pos;
+    while ((pos = _buffer.find("\r\n")) != std::string::npos) {
+      std::string singleMessage = _buffer.substr(0, pos);
+      _buffer.erase(0, pos + 2);
+      std::cout << "Listening: " << singleMessage << std::endl;
+      processMessage(singleMessage);
+    }
   }
 }

@@ -1,17 +1,15 @@
 #include "../inc/Server.hpp"
 
-//extern bool isRunning; Ira: I put it in Server class
+// extern bool isRunning; Ira: I put it in Server class
 
 Server::Server(int port, std::string password)
-    :  _is_running(true), _port(port), _password(password) {
+    : _is_running(true), _port(port), _password(password) {
   std::time_t now = std::time(NULL);
   _creationTime = std::ctime(&now);
   init();
 }
 
-Server::~Server() {
-	cleanMemory();
-}
+Server::~Server() { cleanMemory(); }
 
 void Server::init() {
   // A. Create the Socket
@@ -91,7 +89,7 @@ void Server::run() {
     // 1. Wait for events
     // &fds[0]  : Pointer to the first element of your vector
     // fds.size : Number of items to watch
-    // -1       : Timeout (Wait forever until an event occurs) 
+    // -1       : Timeout (Wait forever until an event occurs)
 
     int poll_count = poll(&_fds[0], _fds.size(), -1);
     if (poll_count < 0) {
@@ -121,27 +119,37 @@ void Server::run() {
             // Client disconnected or error
             std::cout << "Client FD " << _fds[i].fd << " disconnected."
                       << std::endl;
-			disconnectClient(_fds[i].fd, ""); //Ira: I put all stuff for client disconnection and poll fds deleting into his function
-            i--; // Adjust index since vector shrank
+            disconnectClient(
+                _fds[i].fd,
+                ""); // Ira: I put all stuff for client disconnection and poll
+                     // fds deleting into his function
+            i--;     // Adjust index since vector shrank
           } else {
             // Data received!
             buffer[bytes] = '\0'; // Null terminate
             _clients[_fds[i].fd]->appendBuffer(buffer);
 
-            std::cout << "Buffer for FD " << _fds[i].fd << ": "
-                      << _clients[_fds[i].fd]->getBuffer() << std::endl;
-					  while (_clients[_fds[i].fd] && _clients[_fds[i].fd]->getBuffer() != "") {
-			//Ira: extracting and executing commands
-				std::string args = _clients[_fds[i].fd]->extractMessage();
-				if (!executeCMD(args, *_clients[_fds[i].fd])) {
-					_clients[_fds[i].fd]->clearBuffer();
-					disconnectClient(_fds[i].fd, "");
-					i--;
-					break;
-				}
-			}
-	      }
-	    }
+            int current_fd = _fds[i].fd;
+            std::cout << "Buffer for FD " << current_fd << ": "
+                      << _clients[current_fd]->getBuffer() << std::endl;
+            while (_clients.find(current_fd) != _clients.end() &&
+                   _clients[current_fd]->getBuffer() != "") {
+              std::string args = _clients[current_fd]->extractMessage();
+              if (!executeCMD(args, *_clients[current_fd])) {
+                if (_clients.find(current_fd) != _clients.end()) {
+                  _clients[current_fd]->clearBuffer();
+                  disconnectClient(current_fd, "");
+                }
+                i--;
+                break;
+              }
+              if (_clients.find(current_fd) == _clients.end()) {
+                i--;
+                break;
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -179,45 +187,44 @@ void Server::acceptNewClient() {
   std::cout << "New Client Connected! FD: " << newFd << std::endl;
 }
 
-//Ira: close fd, d, but probably too flawless.eleting fd from poll fds, delete client obj and clean the clients map
+// Ira: close fd, d, but probably too flawless.eleting fd from poll fds, delete
+// client obj and clean the clients map
 void Server::disconnectClient(int fd, std::string args) {
 
-	deleteClientFromChannels(fd, args);
-    close(fd);
-    delete _clients[fd];
-    _clients.erase(fd);
+  deleteClientFromChannels(fd, args);
+  close(fd);
+  delete _clients[fd];
+  _clients.erase(fd);
 
-    for (size_t i = 0; i < _fds.size(); ++i) {
-        if (_fds[i].fd == fd) {
-            _fds.erase(_fds.begin() + i);
-            break;
-        }
+  for (size_t i = 0; i < _fds.size(); ++i) {
+    if (_fds[i].fd == fd) {
+      _fds.erase(_fds.begin() + i);
+      break;
     }
-	std::cout << "Client FD " << fd << " disconnected." << std::endl;
+  }
+  std::cout << "Client FD " << fd << " disconnected." << std::endl;
 }
 
-//Ira: if needed, can be deleted
-void Server::sendPing(const Client& client) {
-	std::string token = "keepalive";
-    std::string msg = ":server PING :" + token + "\r\n";
-    send(client.getFd(), msg.c_str(), msg.size(), 0);
+// Ira: if needed, can be deleted
+void Server::sendPing(const Client &client) {
+  std::string token = "keepalive";
+  std::string msg = ":server PING :" + token + "\r\n";
+  send(client.getFd(), msg.c_str(), msg.size(), 0);
 }
 
-//Ira: for tester need to add Clients without sockets
-void Server::addClient(Client &client) {
-	_clients[client.getFd()] = &client;
-}
-
+// Ira: for tester need to add Clients without sockets
+void Server::addClient(Client &client) { _clients[client.getFd()] = &client; }
 
 void Server::cleanMemory() {
-	if (!_channels.empty()) {
-		_channels.clear();
-	}
-	if (!_clients.empty()) {
-		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++) {
-			close(it->first);
-			delete it->second;
-		}
-		_clients.clear();
-	}
+  if (!_channels.empty()) {
+    _channels.clear();
+  }
+  if (!_clients.empty()) {
+    for (std::map<int, Client *>::iterator it = _clients.begin();
+         it != _clients.end(); it++) {
+      close(it->first);
+      delete it->second;
+    }
+    _clients.clear();
+  }
 }
