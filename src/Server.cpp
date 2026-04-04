@@ -1,6 +1,6 @@
 #include "../inc/Server.hpp"
 
-// extern bool isRunning; Ira: I put it in Server class
+extern volatile sig_atomic_t g_signaled;
 
 Server::Server(int port, std::string password)
     : _is_running(true), _port(port), _password(password) {
@@ -92,6 +92,11 @@ void Server::run() {
     // -1       : Timeout (Wait forever until an event occurs)
 
     int poll_count = poll(&_fds[0], _fds.size(), -1);
+    if (g_signaled) {
+      std::cout << "\nShutting down server..." << std::endl;
+      _is_running = false;
+      break;
+    }
     if (poll_count < 0) {
       throw std::runtime_error("poll() failed");
     }
@@ -227,4 +232,5 @@ void Server::cleanMemory() {
     }
     _clients.clear();
   }
+  close(_serverSocketFd);
 }

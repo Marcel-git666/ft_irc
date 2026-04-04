@@ -8,7 +8,7 @@ Channel::Channel()
   _key_settings = false;
   _limit_numeric = -1;
 }
-Channel::Channel(Client *client, std::string name)
+Channel::Channel(Client *client, const std::string &name)
     : _invited_FD(), _name(name), _topic(""), _modes(""), _key(""),
       _limit_string("") {
 
@@ -55,7 +55,7 @@ Channel &Channel::operator=(const Channel &other) {
 
 Channel::~Channel() {}
 
-void Channel::addMember(int clientID, std::string clientNickname) {
+void Channel::addMember(int clientID, const std::string &clientNickname) {
   _members[clientID] = clientNickname;
 }
 
@@ -66,12 +66,10 @@ int Channel::deleteOperator(int clientFD) {
   for (itOp = _operatorsFDs.begin(); itOp != _operatorsFDs.end(); itOp++) {
     if (*itOp == clientFD) {
       _operatorsFDs.erase(itOp);
-      break;
+      return 0;
     }
   }
-  if (itOp == _operatorsFDs.end())
-    return (-1);
-  return (0);
+  return (-1);
 }
 
 void Channel::addInvited(int FD_inv) { _invited_FD.push_back(FD_inv); }
@@ -263,11 +261,12 @@ void Channel::removeFromInvited(int FD) {
   }
 }
 
-void Channel::setTopic(std::string topic) { this->_topic = topic; }
+void Channel::setTopic(const std::string &topic) { this->_topic = topic; }
 
 int Channel::findFromMember(
-    std::string nickName) { // Ira: I need it to solve +o, because I did a
-                            // vector of *Client
+    const std::string
+        &nickName) { // Ira: I need it to solve +o, because I did a
+                     // vector of *Client
   for (std::map<int, std::string>::iterator it = _members.begin();
        it != _members.end(); it++) {
     if (it->second == nickName)
