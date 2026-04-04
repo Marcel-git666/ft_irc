@@ -7,7 +7,6 @@ Channel::Channel()
   _topic_restricted = false;
   _key_settings = false;
   _limit_numeric = -1;
-  _has_limit = false;
 }
 Channel::Channel(Client *client, const std::string &name)
     : _invited_FD(), _name(name), _topic(""), _modes(""), _key(""),
@@ -18,7 +17,6 @@ Channel::Channel(Client *client, const std::string &name)
   _invite_only = false;
   _topic_restricted = false;
   _key_settings = false;
-  _has_limit = false;
   _limit_numeric = -1;
 }
 
@@ -33,7 +31,6 @@ Channel::Channel(const Channel &other) {
   _invite_only = other._invite_only;
   _topic_restricted = other._topic_restricted;
   _key_settings = other._key_settings;
-  _has_limit = other._has_limit;
   _limit_numeric = other._limit_numeric;
   _limit_string = other._limit_string;
 }
@@ -182,7 +179,6 @@ int Channel::addMode(char mode, std::vector<std::string> &modeARGs) {
                            // need to add it to the string, we just need to
                            // change the arg
       this->_modes += mode;
-    this->_has_limit = true;
     modeARGs.erase(modeARGs.begin());
     return (0);
   }
@@ -210,7 +206,6 @@ int Channel::delMode(char mode, std::vector<std::string> &modeARGs) {
     case ('l'): {
       _limit_numeric = -1;
       _limit_string = "";
-      _has_limit = false;
       return (0);
     }
     case ('k'): {

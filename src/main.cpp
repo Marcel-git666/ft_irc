@@ -3,14 +3,13 @@
 #include <cstdlib>
 #include <iostream>
 
-// 1. Global flag to control the loop 
-bool isRunning = true;
+// 1. Global flag to control the loop
+volatile sig_atomic_t g_signaled = 0;
 
 // 2. The function that runs when you press CTRL+C
 void signalHandler(int signum) {
   (void)signum; // Silence unused warning
-  std::cout << "\nSignal received! Stopping server..." << std::endl;
-  isRunning = false; // This will break the loop in Server.cpp
+  g_signaled = 1;
 }
 
 bool isValidPort(std::string const &port) {
@@ -37,8 +36,13 @@ int main(int argc, char **argv) {
   }
 
   // 3. Register the signal handler
-  signal(SIGINT, signalHandler);  // Catch Ctrl+C
-  signal(SIGQUIT, signalHandler); // Catch Ctrl+backslash
+
+  struct sigaction sa;
+  sa.sa_handler = signalHandler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  sigaction(SIGINT, &sa, NULL);
+  sigaction(SIGQUIT, &sa, NULL);
 
   try {
     int port = std::atoi(portStr.c_str());

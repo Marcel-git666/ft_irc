@@ -7,19 +7,18 @@
 
 class Channel {
 private:
-  std::map<int, std::string> _members;
-  std::vector<int> _operatorsFDs;
-  std::vector<int> _invited_FD;
-  std::string _name;
-  std::string _topic;
-  std::string _modes;
-  std::string _key;
-  std::string _limit_string;
-  bool _invite_only;
-  bool _topic_restricted;
-  bool _key_settings;
-  bool _has_limit;
-  int _limit_numeric;
+	std::map<int, std::string> _members;
+	std::vector<int> _operatorsFDs;
+	std::vector<int> _invited_FD;
+	std::string _name;
+	std::string _topic;
+	std::string _modes;
+	std::string _key;
+	std::string _limit_string;
+	bool _invite_only;
+	bool _topic_restricted;
+	bool _key_settings;
+	int _limit_numeric;
 
   // OCF - Private to prevent copying
 public:
