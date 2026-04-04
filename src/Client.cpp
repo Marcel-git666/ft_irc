@@ -2,7 +2,7 @@
 #include <iostream>
 
 // Constructor: Called when you accept() a new connection
-Client::Client(int fd, std::string ip) : _fd(fd), _ipAddr(ip) {
+Client::Client(int fd, const std::string &ip) : _fd(fd), _ipAddr(ip) {
   // Initialize buffer as empty
   _buffer = "";
   _registered = false;
@@ -34,25 +34,26 @@ std::string Client::getUsername() const { return _username; }
 
 std::string Client::getRealname() const { return _realname; }
 
-//SETTERS
-bool Client::setRegistered() { 
-	if (_hasPassword == true && !_nickname.empty() && !_username.empty() && !_realname.empty())
-		_registered = true;
-	return(_registered);
+// SETTERS
+bool Client::setRegistered() {
+  if (_hasPassword == true && !_nickname.empty() && !_username.empty() &&
+      !_realname.empty())
+    _registered = true;
+  return (_registered);
 }
 
 void Client::setHasPassword() { _hasPassword = true; }
 
-void Client::setNickname(std::string nickname) { _nickname = nickname; }
+void Client::setNickname(const std::string &nickname) { _nickname = nickname; }
 
-void Client::setUsername(std::string username) { _username = username; }
+void Client::setUsername(const std::string &username) { _username = username; }
 
-void Client::setRealname(std::string realname) { _realname = realname; }
+void Client::setRealname(const std::string &realname) { _realname = realname; }
 
 // BUFFER HANDLING (The "Bucket")
 
 // 1. Add raw data to the bucket
-void Client::appendBuffer(std::string data) { _buffer += data; }
+void Client::appendBuffer(const std::string &data) { _buffer += data; }
 
 // 2. Clear the bucket (if needed)
 void Client::clearBuffer() { _buffer.clear(); }
@@ -66,7 +67,6 @@ bool Client::isReady() {
 // 4. The Handover: Extract one full command
 std::string Client::extractMessage() {
   size_t pos = _buffer.find('\n');
-  
 
   // If no newline, return empty (waiting for more data)
   if (pos == std::string::npos) {
@@ -74,7 +74,8 @@ std::string Client::extractMessage() {
   }
 
   // Extract the substring (0 to pos)
-  std::string message = _buffer.substr(0, pos - 1); // -1 because cut '\r' as well
+  std::string message =
+      _buffer.substr(0, pos - 1); // -1 because cut '\r' as well
 
   // Remove the message AND the newline from the buffer
   _buffer.erase(0, pos + 1);
@@ -82,14 +83,16 @@ std::string Client::extractMessage() {
 }
 
 void Client::sendMessage(const std::string &msg) const {
-	send(_fd, msg.c_str(), msg.size(), 0);
+  send(_fd, msg.c_str(), msg.size(), 0);
 }
 
-
-std::ostream& operator<<(std::ostream& out, const Client& client) {
-	out << "Client info :\n" << "nickname: " << client.getNickname() << ", realname: " <<
-		client.getRealname() << ", username: " << client.getUsername() 
-		<< " password (true/false): " << client.getHasPassword() << " registered (true/false): " << client.getRegistered() 
-		<< " IP adress: " << client.getIpAddr();
-	return (out);
+std::ostream &operator<<(std::ostream &out, const Client &client) {
+  out << "Client info :\n"
+      << "nickname: " << client.getNickname()
+      << ", realname: " << client.getRealname()
+      << ", username: " << client.getUsername()
+      << " password (true/false): " << client.getHasPassword()
+      << " registered (true/false): " << client.getRegistered()
+      << " IP adress: " << client.getIpAddr();
+  return (out);
 }

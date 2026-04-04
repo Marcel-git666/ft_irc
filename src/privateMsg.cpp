@@ -14,7 +14,7 @@ std::vector<std::string> Server::split(const std::string &targetsStr,
   return (targets);
 }
 
-void Server::sendPrivateMsg(const Client &sender, std::string args) {
+void Server::sendPrivateMsg(const Client &sender, const std::string &args) {
   std::vector<std::string> targets;
   size_t colonPos = args.find(":");
   if (colonPos == std::string::npos || colonPos == 0) {

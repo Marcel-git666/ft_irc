@@ -227,4 +227,5 @@ void Server::cleanMemory() {
     }
     _clients.clear();
   }
+  close(_serverSocketFd);
 }

@@ -1,7 +1,8 @@
 #include "../inc/Server.hpp"
+#include <vector>
 
-void Server::connectToChannel(Client *client, std::string &name,
-                              std::string key) {
+void Server::connectToChannel(Client *client, const std::string &name,
+                              const std::string &key) {
   Channel *ch = searchChannel(name);
   if (!ch) {
     std::pair<std::map<std::string, Channel>::iterator, bool> result;
@@ -70,8 +71,12 @@ Channel *Server::searchChannel(const std::string &channelName) {
   return NULL;
 }
 
-void Server::sendToChannel(Client &sender, std::string args) {
+void Server::sendToChannel(Client &sender, const std::string &args) {
   size_t colonPos = args.find(":");
+  if (colonPos == std::string::npos || colonPos == 0) {
+    sendError("PRIVMSG", 461, sender);
+    return;
+  }
   std::string channelName = args.substr(0, colonPos - 1);
   Channel *ch = searchChannel(channelName);
   if (!ch)
@@ -92,8 +97,8 @@ void Server::sendToChannel(Client &sender, std::string args) {
   }
 }
 
-void Server::broadcastChannel(Channel *ch, std::string command,
-                              std::string comment, Client &sender) {
+void Server::broadcastChannel(Channel *ch, const std::string &command,
+                              const std::string &comment, Client &sender) {
   if (ch->clientIsMember(sender.getFd())) {
     std::string msg = ":" + sender.getNickname() + "!" + sender.getUsername() +
                       "@localhost " + command + " " + ch->getChName() + " " +
@@ -139,7 +144,7 @@ void Server::sendNames(Channel &ch, Client *client) {
   sendMsgToClient(msg, *client);
 }
 
-void Server::inviteToChan(Client &sender, std::string args) {
+void Server::inviteToChan(Client &sender, const std::string &args) {
   std::vector<std::string> targets;
   size_t hashtagPos = args.find("#");
   std::string chanName = args.substr(hashtagPos);
@@ -184,18 +189,25 @@ void Server::inviteToChan(Client &sender, std::string args) {
   }
 }
 
-void Server::deleteClientFromChannels(int FD, std::string reason) {
+void Server::deleteClientFromChannels(int FD, const std::string &reason) {
+  std::vector<std::string> channelsToDelete;
   for (std::map<std::string, Channel>::iterator it = _channels.begin();
        it != _channels.end(); it++) {
     Client *foundClient = findClient(FD);
     if (foundClient) {
       broadcastChannel(&(it->second), "QUIT", reason, *foundClient);
       it->second.deleteClient(FD);
+      if (it->second.getMembers().size() == 0) {
+        channelsToDelete.push_back(it->first);
+      }
     }
+  }
+  for (size_t i = 0; i < channelsToDelete.size(); i++) {
+    _channels.erase(channelsToDelete[i]);
   }
 }
 
-void Server::kickOutOfChannel(Client &sender, std::string args) {
+void Server::kickOutOfChannel(Client &sender, const std::string &args) {
   std::vector<std::string> targets;
   size_t spasePos = args.find(" ");
   std::string reason = "";
@@ -233,6 +245,9 @@ void Server::kickOutOfChannel(Client &sender, std::string args) {
             sendMsgToFd(it->first, msg);
           }
           ch->deleteClient(clientFdsearch(*it));
+          if (ch->getMembers().size() == 0) {
+            _channels.erase(chanName);
+          }
         } else {
           int exist = 0;
           for (std::map<int, Client *>::iterator it_cli = _clients.begin();
@@ -299,6 +314,9 @@ void Server::execPART(Client &sender, std::string &args) {
       broadcastChannel(ch, "PART", reason, sender);
       ch->deleteOperator(sender.getFd());
       ch->deleteClient(sender.getFd());
+      if (ch->getMembers().size() == 0) {
+        _channels.erase(*it);
+      }
     }
   }
 }
