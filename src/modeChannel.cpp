@@ -1,6 +1,10 @@
 #include "../inc/Server.hpp"
 
 void Server::sendChanMode(Client& sender, Channel* chan) {
+	if (!chan->clientIsMember(sender.getFd())) {
+		sendError(chan->getChName(), 442, sender);
+		return;
+	}
 	if (DEBUG)
 		std::cout << BLUE << "sending mode of chan " << chan->getChName() 
 		<< " to the client " << sender.getNickname() << ENDCOLOR << std::endl;

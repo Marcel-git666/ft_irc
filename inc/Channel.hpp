@@ -18,7 +18,6 @@ private:
 	bool _invite_only;
 	bool _topic_restricted;
 	bool _key_settings;
-	bool _has_limit;
 	int _limit_numeric;
 
 	// OCF - Private to prevent copying
