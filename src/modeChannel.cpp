@@ -74,7 +74,9 @@ void Server::applyMode(Client &sender, Channel *chan,
   } else {
     modes = modestring;
   }
-
+  if (modes.empty()) {
+    return;
+  }
   // --- ADDING MODES (+) ---
   if (modes[0] == '+') {
     // Special check: +k and +l both require arguments. If both are passed but
@@ -93,7 +95,11 @@ void Server::applyMode(Client &sender, Channel *chan,
         modeRes = chan->addMode(modes[i], modeARGs);
         switch (modeRes) {
         case 441: // ERR_USERNOTINCHANNEL (for +o)
-          sendError(modeARGs[0] + " " + chan->getChName(), 441, sender);
+          if (!modeARGs.empty() && clientFdsearch(modeARGs[0]) == -1) {
+            sendError(modeARGs[0], 401, sender); // ERR_NOSUCHNICK
+          } else {
+            sendError(modeARGs[0] + " " + chan->getChName(), 441, sender);
+          }
           return;
         case 461: // ERR_NEEDMOREPARAMS
           sendError("MODE", 461, sender);

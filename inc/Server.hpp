@@ -6,9 +6,10 @@
 #include "Definitions.hpp" //Ira: I put defines in a different file to keep this hpp more clear
 #include <arpa/inet.h> // for inet_ntoa
 #include <cctype>      // Ira: for isdigit nickname checking
-#include <cstring>     // <--- REQUIRED for std::memset
-#include <ctime>       // Ira: time of server creation
-#include <fcntl.h>     // <--- REQUIRED for fcntl, F_SETFL, O_NONBLOCK
+#include <cerrno>
+#include <cstring> // <--- REQUIRED for std::memset
+#include <ctime>   // Ira: time of server creation
+#include <fcntl.h> // <--- REQUIRED for fcntl, F_SETFL, O_NONBLOCK
 #include <iostream>
 #include <map>
 #include <netinet/in.h> // Required for sockaddr_in

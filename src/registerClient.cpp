@@ -18,7 +18,8 @@ std::string Server::checkNickname(const std::string &arg) {
   }
 
   // 2. Check rules: cannot start with digit, no spaces, colons, or hashtags
-  if (isdigit(arg[0]) || arg.find(':') != std::string::npos ||
+  if (isdigit(static_cast<unsigned char>(arg[0])) ||
+      arg.find(':') != std::string::npos ||
       arg.find('#') != std::string::npos ||
       arg.find(' ') != std::string::npos) {
     return "432"; // ERR_ERRONEUSNICKNAME

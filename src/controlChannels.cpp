@@ -264,9 +264,13 @@ void Server::kickOutOfChannel(Client &sender, const std::string &args) {
 
     if (colonPos != std::string::npos) {
       reason = args.substr(colonPos);
-      targetsStr = args.substr(spacePos + 1,
-                               colonPos - spacePos -
-                                   2); // Cut exactly between space and colon
+
+      size_t nextSpace = args.find(' ', spacePos + 1);
+      if (nextSpace != std::string::npos && nextSpace < colonPos) {
+        targetsStr = args.substr(spacePos + 1, nextSpace - spacePos - 1);
+      } else {
+        targetsStr = args.substr(spacePos + 1, colonPos - spacePos - 1);
+      }
     } else {
       targetsStr = args.substr(spacePos + 1);
     }

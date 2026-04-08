@@ -96,13 +96,24 @@ void Server::run() {
 
           ssize_t bytes = recv(_fds[i].fd, buffer, sizeof(buffer) - 1, 0);
 
-          if (bytes <= 0) {
+          if (bytes == 0) {
             std::cout << "Client FD " << _fds[i].fd << " disconnected."
                       << std::endl;
             disconnectClient(_fds[i].fd, "");
-            i--; // Adjust index since the vector shrank
+            i--;
+          } else if (bytes < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+              continue;
+            } else {
+              std::cout << "Client FD " << _fds[i].fd
+                        << " encountered a recv error. Disconnecting."
+                        << std::endl;
+              disconnectClient(_fds[i].fd, "");
+              i--;
+            }
           } else {
             // Data received safely
+            buffer[bytes] = '\0';
             _clients[_fds[i].fd]->appendBuffer(buffer);
             int current_fd = _fds[i].fd;
 
@@ -111,7 +122,10 @@ void Server::run() {
             while (_clients.find(current_fd) != _clients.end() &&
                    _clients[current_fd]->isReady()) {
               std::string args = _clients[current_fd]->extractMessage();
-
+              if (args.empty() ||
+                  args.find_first_not_of(" \t\r\n") == std::string::npos) {
+                continue;
+              }
               if (!executeCMD(args, *_clients[current_fd])) {
                 if (_clients.find(current_fd) != _clients.end()) {
                   _clients[current_fd]->clearBuffer();
