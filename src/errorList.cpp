@@ -1,5 +1,12 @@
 #include "../inc/Server.hpp"
 
+/**
+ * @brief Generates a formatted IRC error message based on the error code.
+ * * @param args Additional context for the error (e.g., channel name or
+ * nickname).
+ * @param errorNumber The official IRC numeric error code (RFC 1459).
+ * @return std::string The fully formatted IRC error message ending with \r\n.
+ */
 std::string Server::GetErrorStr(const std::string &args, int errorNumber) {
   switch (errorNumber) {
   case (401):

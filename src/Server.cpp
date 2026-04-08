@@ -11,135 +11,107 @@ Server::Server(int port, std::string password)
 
 Server::~Server() { cleanMemory(); }
 
+/**
+ * @brief Initializes the server socket, sets options, and binds to the port.
+ * Sets the socket to non-blocking mode and prepares the poll structure.
+ */
 void Server::init() {
-  // A. Create the Socket
-  // AF_INET = IPv4, SOCK_STREAM = TCP
   _serverSocketFd = socket(AF_INET, SOCK_STREAM, 0);
-
   if (_serverSocketFd == -1) {
     throw std::runtime_error("Error: Failed to create socket");
   }
 
   std::cout << "Server initialized! Socket FD: " << _serverSocketFd
             << std::endl;
-  int option_value = 1; // 1 means "True" -> Turn this option ON
 
-  // 2. Apply the option
-  // Level: SOL_SOCKET (Socket-level option)
-  // Option: SO_REUSEADDR (Allow reuse of local addresses)
+  int option_value = 1;
+  // Allow reuse of local addresses to prevent "Address already in use" errors
+  // after restart
   if (setsockopt(_serverSocketFd, SOL_SOCKET, SO_REUSEADDR, &option_value,
                  sizeof(option_value)) == -1) {
     throw std::runtime_error("Error: failed to set socket options");
   }
 
-  std::cout << "Socket options set to reuse address." << std::endl;
-
-  // 3. Set Non-Blocking Mode
-  // F_GETFL: Get current flags
-  // F_SETFL: Set new flags
-  // O_NONBLOCK: The specific flag for non-blocking I/O
+  // Set Non-Blocking Mode
   if (fcntl(_serverSocketFd, F_SETFL, O_NONBLOCK) == -1) {
     throw std::runtime_error("Error: failed to set non-blocking mode");
   }
 
-  std::cout << "Socket set to non-blocking mode." << std::endl;
-
-  // 4. Create the address structure
   struct sockaddr_in addr;
-  // Clear the structure (good practice to avoid garbage values)
   std::memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = INADDR_ANY; // Listen on all network interfaces
+  addr.sin_port = htons(_port);      // Convert to Network Byte Order
 
-  addr.sin_family = AF_INET; // IPv4
-  // INADDR_ANY tells the OS: "Listen on ALL available network interfaces"
-  // (e.g., Wifi, Ethernet, and Localhost)
-  addr.sin_addr.s_addr = INADDR_ANY;
-  // htons converts "Host Byte Order" to "Network Byte Order" (Big Endian)
-  // If you forget this, port 6667 might look like port 42351 to the network!
-  addr.sin_port = htons(_port);
-
-  // 5. Bind the socket to the port
   if (bind(_serverSocketFd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
     throw std::runtime_error("Error: failed to bind socket");
   }
-  std::cout << "Socket bound to port " << _port << "." << std::endl;
 
-  // 6. Listen for incoming connections
-  // SOMAXCONN is a constant (usually 128 or 4096) that defines the maximum
-  // number of pending connections in the queue.
-  // If 1000 people try to connect at the EXACT same nanosecond, the OS queues
-  // them.
   if (listen(_serverSocketFd, SOMAXCONN) == -1) {
     throw std::runtime_error("Error: failed to listen");
   }
 
   std::cout << "Server is listening on port " << _port << "..." << std::endl;
 
-  // 7. Add the server socket to the poll structure
+  // Add the listener socket to our poll system
   struct pollfd pfd;
-  pfd.fd = _serverSocketFd; // Watch this file descriptor
-  pfd.events = POLLIN;      // We care about "POLLIN" (Data coming IN)
-  pfd.revents = 0;          // Clear the return events
-
-  _fds.push_back(pfd); // Add it to your vector
+  pfd.fd = _serverSocketFd;
+  pfd.events = POLLIN;
+  pfd.revents = 0;
+  _fds.push_back(pfd);
 }
 
+/**
+ * @brief The main event loop of the server.
+ * Waits for incoming data or new connections using poll() and processes them.
+ */
 void Server::run() {
   std::cout << "Server is RUNNING..." << std::endl;
-  while (_is_running) {
-    // 1. Wait for events
-    // &fds[0]  : Pointer to the first element of your vector
-    // fds.size : Number of items to watch
-    // -1       : Timeout (Wait forever until an event occurs)
 
+  while (_is_running) {
     int poll_count = poll(&_fds[0], _fds.size(), -1);
+
+    // Check if Ctrl+C was pressed
     if (g_signaled) {
       std::cout << "\nShutting down server..." << std::endl;
       _is_running = false;
       break;
     }
+
     if (poll_count < 0) {
       throw std::runtime_error("poll() failed");
     }
 
-    // 2. Iterate through all file descriptors to check for events
-    // We use a manual index because _fds.size() might grow inside the loop!
     for (size_t i = 0; i < _fds.size(); i++) {
-
-      // Check if this specific socket has data to read (POLLIN)
       if (_fds[i].revents & POLLIN) {
 
-        // CASE A: It's the Listener Socket (New Connection)
+        // CASE A: New incoming connection
         if (_fds[i].fd == _serverSocketFd) {
           acceptNewClient();
         }
-        // CASE B: It's a regular Client (Incoming Message)
+        // CASE B: Data received from an existing client
         else {
           char buffer[1024];
-          std::memset(buffer, 0, sizeof(buffer)); // Clear junk data
+          std::memset(buffer, 0, sizeof(buffer));
 
-          ssize_t bytes = recv(_fds[i].fd, buffer, sizeof(buffer) - 1,
-                               0); // -1 to leave space for null terminator
+          ssize_t bytes = recv(_fds[i].fd, buffer, sizeof(buffer) - 1, 0);
 
           if (bytes <= 0) {
-            // Client disconnected or error
             std::cout << "Client FD " << _fds[i].fd << " disconnected."
                       << std::endl;
-            disconnectClient(
-                _fds[i].fd,
-                ""); // Ira: I put all stuff for client disconnection and poll
-                     // fds deleting into his function
-            i--;     // Adjust index since vector shrank
+            disconnectClient(_fds[i].fd, "");
+            i--; // Adjust index since the vector shrank
           } else {
-            // Data received!
-            buffer[bytes] = '\0'; // Null terminate
+            // Data received safely
             _clients[_fds[i].fd]->appendBuffer(buffer);
-
             int current_fd = _fds[i].fd;
-            std::cout << "Buffer for FD " << current_fd << ": "
-                      << _clients[current_fd]->getBuffer() << std::endl;
+
+            // FIX: Process messages ONLY when a full line (\n) is ready in the
+            // buffer
             while (_clients.find(current_fd) != _clients.end() &&
-                   _clients[current_fd]->getBuffer() != "") {
+                   _clients[current_fd]->isReady()) {
               std::string args = _clients[current_fd]->extractMessage();
+
               if (!executeCMD(args, *_clients[current_fd])) {
                 if (_clients.find(current_fd) != _clients.end()) {
                   _clients[current_fd]->clearBuffer();
@@ -148,6 +120,8 @@ void Server::run() {
                 i--;
                 break;
               }
+              // If client was disconnected inside executeCMD (e.g., by QUIT
+              // command)
               if (_clients.find(current_fd) == _clients.end()) {
                 i--;
                 break;
@@ -160,11 +134,14 @@ void Server::run() {
   }
 }
 
+/**
+ * @brief Accepts a new client connection, sets it to non-blocking, and adds it
+ * to the server.
+ */
 void Server::acceptNewClient() {
   struct sockaddr_in clientAddr;
   socklen_t clientAddrLen = sizeof(clientAddr);
 
-  // 1. Accept the connection
   int newFd =
       accept(_serverSocketFd, (struct sockaddr *)&clientAddr, &clientAddrLen);
   if (newFd == -1) {
@@ -172,30 +149,30 @@ void Server::acceptNewClient() {
     return;
   }
 
-  // 2. Set Non-Blocking (Vital!)
+  // Set the new client socket to non-blocking
   if (fcntl(newFd, F_SETFL, O_NONBLOCK) == -1) {
     std::cerr << "Error: fcntl failed" << std::endl;
     close(newFd);
     return;
   }
 
-  // 3. Add to poll list
   struct pollfd newPfd;
   newPfd.fd = newFd;
-  newPfd.events = POLLIN; // Monitor for incoming data
+  newPfd.events = POLLIN;
   newPfd.revents = 0;
   _fds.push_back(newPfd);
 
   Client *newClient = new Client(newFd, inet_ntoa(clientAddr.sin_addr));
-  _clients[newFd] = newClient; // Store it in the map
+  _clients[newFd] = newClient;
 
   std::cout << "New Client Connected! FD: " << newFd << std::endl;
 }
 
-// Ira: close fd, d, but probably too flawless.eleting fd from poll fds, delete
-// client obj and clean the clients map
+/**
+ * @brief Fully disconnects a client, cleans up their FD, and removes them from
+ * channels.
+ */
 void Server::disconnectClient(int fd, std::string args) {
-
   deleteClientFromChannels(fd, args);
   close(fd);
   delete _clients[fd];
@@ -210,23 +187,22 @@ void Server::disconnectClient(int fd, std::string args) {
   std::cout << "Client FD " << fd << " disconnected." << std::endl;
 }
 
-// Ira: if needed, can be deleted
-void Server::sendPing(const Client &client) {
-  std::string token = "keepalive";
-  std::string msg = ":server PING :" + token + "\r\n";
-  send(client.getFd(), msg.c_str(), msg.size(), 0);
-}
-
-// Ira: for tester need to add Clients without sockets
+/**
+ * @brief Helper for unit testing to add a mocked client.
+ */
 void Server::addClient(Client &client) { _clients[client.getFd()] = &client; }
 
+/**
+ * @brief Frees all allocated memory and closes all open file descriptors upon
+ * server shutdown.
+ */
 void Server::cleanMemory() {
   if (!_channels.empty()) {
     _channels.clear();
   }
   if (!_clients.empty()) {
     for (std::map<int, Client *>::iterator it = _clients.begin();
-         it != _clients.end(); it++) {
+         it != _clients.end(); ++it) {
       close(it->first);
       delete it->second;
     }

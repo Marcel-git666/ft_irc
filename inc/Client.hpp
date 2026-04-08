@@ -1,21 +1,29 @@
-#pragma once
+#ifndef CLIENT_HPP
+#define CLIENT_HPP
 
+#include <iostream> // Required for std::ostream
 #include <string>
-#include <sys/socket.h> // send()
+#include <sys/socket.h>
 #include <unistd.h>
 
+/**
+ * @class Client
+ * @brief Represents a single connected IRC client.
+ * * Manages client-specific data such as socket file descriptor, network
+ * addresses, authentication status, and the incoming data buffer.
+ */
 class Client {
 private:
-  int _fd;               // The socket file descriptor (the "phone line")
-  std::string _ipAddr;   // The user's IP address (for logging/bans)
-  std::string _buffer;   // The storage for incoming partial data
-  std::string _nickname; // Ira: should be unique
+  int _fd;
+  std::string _ipAddr;
+  std::string _buffer;
+  std::string _nickname;
   std::string _username;
   std::string _realname;
-  bool _hasPassword; // Ira: set as false, unles user give us correct password
-  bool _registered;  // Ira: set as false, changed if password approwed and nick
-                     // is unick, and we have user info (username and realname)
-  // OCF - Private to prevent copying
+  bool _hasPassword;
+  bool _registered;
+
+  // OCF - Private to prevent copying (protects against double socket closing)
   Client(const Client &other);
   Client &operator=(const Client &other);
 
@@ -41,18 +49,17 @@ public:
   void setUsername(const std::string &username);
   void setRealname(const std::string &realname);
 
-  // Buffer Management (The "Bucket")
+  // Buffer Management
   void appendBuffer(const std::string &data);
   void clearBuffer();
-
-  // Handover Logic (For Irina/Parser)
-  // Checks if there is a full command (\r\n) in the buffer
   bool isReady();
-  // Extracts the full command and removes it from the buffer
   std::string extractMessage();
 
-  // Ira: include sending message into client obj, becaouse for unit tests don
+  // Network Communication
   virtual void sendMessage(const std::string &msg) const;
 };
 
+// Operator overload for debug printing
 std::ostream &operator<<(std::ostream &out, const Client &client);
+
+#endif
