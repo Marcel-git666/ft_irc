@@ -314,7 +314,7 @@ void Server::kickOutOfChannel(Client &sender, const std::string &args) {
  * @brief Handles the TOPIC command.
  * Updates the channel topic if permissions allow (+t mode check).
  */
-void Server::setTopic(Client &sender, std::string &args) {
+void Server::setTopic(Client &sender, const std::string &args) {
   size_t spacePos = args.find(' ');
   size_t colonPos = args.find(':');
 
@@ -344,7 +344,7 @@ void Server::setTopic(Client &sender, std::string &args) {
  * @brief Handles the PART command.
  * Allows a user to gracefully leave one or more channels.
  */
-void Server::execPART(Client &sender, std::string &args) {
+void Server::execPART(Client &sender, const std::string &args) {
   size_t spacePos = args.find(' ');
   size_t colonPos = args.find(':');
 

@@ -2,7 +2,7 @@
 
 extern volatile sig_atomic_t g_signaled;
 
-Server::Server(int port, std::string password)
+Server::Server(int port, const std::string &password)
     : _is_running(true), _port(port), _password(password) {
   std::time_t now = std::time(NULL);
   _creationTime = std::ctime(&now);
