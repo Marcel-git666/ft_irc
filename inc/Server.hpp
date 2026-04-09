@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 #include <unistd.h> // for close()
 #include <vector>
+#include <csignal>
 
 class Server {
 private:
