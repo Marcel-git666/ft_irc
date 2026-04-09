@@ -6,9 +6,10 @@
 #include "Definitions.hpp" //Ira: I put defines in a different file to keep this hpp more clear
 #include <arpa/inet.h> // for inet_ntoa
 #include <cctype>      // Ira: for isdigit nickname checking
-#include <cstring>     // <--- REQUIRED for std::memset
-#include <ctime>       // Ira: time of server creation
-#include <fcntl.h>     // <--- REQUIRED for fcntl, F_SETFL, O_NONBLOCK
+#include <cerrno>
+#include <cstring> // <--- REQUIRED for std::memset
+#include <ctime>   // Ira: time of server creation
+#include <fcntl.h> // <--- REQUIRED for fcntl, F_SETFL, O_NONBLOCK
 #include <iostream>
 #include <map>
 #include <netinet/in.h> // Required for sockaddr_in
@@ -57,7 +58,7 @@ private:
   Server &operator=(const Server &other);
 
 public:
-  Server(int port, std::string password);
+  Server(int port, const std::string &password);
   ~Server();
   void run();
   void cleanMemory();
@@ -86,8 +87,8 @@ public:
   void operateMode(Client &sender, const std::string &args);
   void applyMode(Client &sender, Channel *chan, const std::string &modestring);
   void sendChanMode(Client &sender, Channel *chan);
-  void setTopic(Client &client, std::string &args);
-  void execPART(Client &sender, std::string &args);
+  void setTopic(Client &client, const std::string &args);
+  void execPART(Client &sender, const std::string &args);
   void broadcastChannel(Channel *ch, const std::string &command,
                         const std::string &topic, Client &sender);
 
