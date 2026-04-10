@@ -10,13 +10,13 @@
 std::string Server::GetErrorStr(const std::string &args, int errorNumber) {
   switch (errorNumber) {
   case (401):
-    return (":server 401 * " + args + " :No such nick/channel\r\n");
+    return (":server 401 " + args + " :No such nick/channel\r\n");
   case (403):
-    return (":server 403 * " + args + " :No such channel\r\n");
+    return (":server 403 " + args + " :No such channel\r\n");
   case (433):
-    return (":server 433 * " + args + " :Nickname is already in use\r\n");
+    return (":server 433 " + args + " :Nickname is already in use\r\n");
   case (432):
-    return (":server 432 * " + args + " :Erroneus nickname\r\n");
+    return (":server 432 " + args + " :Erroneus nickname\r\n");
   case (441):
     return (":server 441 " + args + " :They aren't on that channel\r\n");
   case (442):

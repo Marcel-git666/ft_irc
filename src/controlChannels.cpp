@@ -221,7 +221,7 @@ void Server::deleteClientFromChannels(int FD, const std::string &reason) {
   for (std::map<std::string, Channel>::iterator it = _channels.begin();
        it != _channels.end(); ++it) {
     Client *foundClient = findClient(FD);
-    if (foundClient) {
+    if (foundClient && foundClient->getRegistered()) {
       broadcastChannel(&(it->second), "QUIT", reason, *foundClient);
       it->second.deleteClient(FD);
       if (it->second.getMembers().empty()) {
